@@ -12,21 +12,20 @@ contract EthTreasuryContract {
     //Delegate token
     mapping(address account => mapping(address spender => uint256)) private _allowances;
 
-    uint256 private _totalTorBalance=0;    
-    uint256 private _totalEthBalance=0;    
+    uint256 public _totalTorBalance=0;
+    uint256 public _totalEthBalance=0;
     uint256 public _exchangeRate;
     uint8 public _depositFeeRate;
     uint8 public _withdrawFeeRate;
     uint8 private _decimal=18;
-    address private _owner;    
+    address private _owner;
     IERC20 public _token;
-    IBlast public blastToken;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
         // Event emitted when a swap occurs
     event Swap(address indexed sender, uint256 amountIn, uint256 amountOut);
-    event Withdrawal(address indexed sender, uint256 amountIn, uint256 amountOut);
+    event Withdrawal(address indexed sender, uint256 amountOut);
 
 
     modifier onlyOwner(){
@@ -43,9 +42,9 @@ contract EthTreasuryContract {
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableYield();
     }
 
-    function claimYield(uint256 amount) external onlyOwner returns (uint256){
+    function claimYield(uint256 amount, address recipientOfYield) external onlyOwner returns (uint256){
 	  //This function is public meaning anyone can claim the yield
-		return IBlast(0x4300000000000000000000000000000000000002).claimYield(address(this), _owner, amount);
+		return IBlast(0x4300000000000000000000000000000000000002).claimYield(address(this), recipientOfYield, amount);
     }
 
 	function readClaimableYield(address contractAddress) external view onlyOwner returns (uint256){
@@ -53,16 +52,16 @@ contract EthTreasuryContract {
 		return IBlast(0x4300000000000000000000000000000000000002).readClaimableYield(contractAddress);
     }
 
-	function claimAllYield() external onlyOwner returns (uint256){
+	function claimAllYield(address recipientOfYield) external onlyOwner returns (uint256){
 	  //This function is public meaning anyone can claim the yield
-		return IBlast(0x4300000000000000000000000000000000000002).claimAllYield(address(this), _owner);
+		return IBlast(0x4300000000000000000000000000000000000002).claimAllYield(address(this), recipientOfYield);
     }
 
     function transferEthToOwner(uint256 amount) external onlyOwner{
         payable(_owner).transfer(amount);
     }
 
-    function getEthBalance() external view returns (uint256){
+    function getContractEthBalance() external view returns (uint256){
         return address(this).balance;
     }
 
@@ -86,6 +85,18 @@ contract EthTreasuryContract {
         _withdrawFeeRate = feeRate;
     }
 
+    function getAvailiableContractEthBalance() external view onlyOwner returns (uint256){
+
+        return address(this).balance - _totalEthBalance;
+    }
+
+    function withdrawContractEth(uint256 amount) external onlyOwner {
+        require(address(this).balance - _totalEthBalance <= amount, "Not enough ETH Balance");
+        payable(_owner).transfer(amount);
+
+        emit Transfer(address(this), _owner, amount);
+    }
+
         // Fallback function to receive Ether
     receive() external payable {
         // This function allows the contract to receive Ether directly
@@ -97,11 +108,15 @@ contract EthTreasuryContract {
 
         // deposit fee 1%
         uint256 ethAmount =  (msg.value * (100 - _depositFeeRate)) / 100;
-        uint256 torTokenAmount = (ethAmount * _exchangeRate);
-                
-        _token.transfer(msg.sender, torTokenAmount);       
 
-        emit Swap(msg.sender, msg.value, torTokenAmount);
+        _totalEthBalance += ethAmount;
+        uint256 torTokenAmount = (ethAmount * _exchangeRate);
+
+        _totalTorBalance+=torTokenAmount;
+
+        _token.transfer(msg.sender, torTokenAmount);
+
+        emit Swap(msg.sender, ethAmount, torTokenAmount);
 
         return true;
     }
@@ -115,19 +130,20 @@ contract EthTreasuryContract {
 
         uint256 ethAmount = tokenAmount / _exchangeRate;
 
+        _totalTorBalance -= tokenAmount;
         // withdrawal amount fee 2%
         ethAmount = (ethAmount * (100 - _withdrawFeeRate)) / 100;
+        _totalEthBalance -= ethAmount;
 
-        // Transfer deposited ERC-20 tokens back to the sender        
+        // Transfer deposited ERC-20 tokens back to the sender
         _token.transferFrom(msg.sender, address(this), tokenAmount);
 
         // Transfer deposited ETH back to the sender
         payable(msg.sender).transfer(ethAmount);
 
         // Emit Withdrawal event
-        emit Withdrawal(msg.sender, tokenAmount, ethAmount);
+        emit Withdrawal(msg.sender, ethAmount);
     }
 
-    
-}
 
+}
