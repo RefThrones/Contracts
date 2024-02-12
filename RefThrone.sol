@@ -90,7 +90,7 @@ contract RefThrone is Ownable {
         string memory linkUrl
     ) external returns (uint256 throneId) {
         require(torAmount > 0, "At least 1 TOR is required");
-        require(!_isThroneInReview(msg.sender, serviceType, benefitType), "It's already in review");
+        require(!_isThroneInReview(msg.sender, serviceType, benefitType), "Already in review");
 
         uint256 ownedThroneId = _findThroneId(Status.Owned, serviceType, benefitType);
         if (ownedThroneId > 0) {
