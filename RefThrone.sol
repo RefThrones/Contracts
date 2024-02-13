@@ -16,6 +16,7 @@ contract RefThrone is Ownable {
 
     struct Throne {
         uint256 id;
+        string name;
         string serviceType;
         string benefitType;
         uint256 benefitAmount;
@@ -82,6 +83,7 @@ contract RefThrone is Ownable {
     }
 
     function requestDepositForThrone(
+        string memory name,
         string memory serviceType,
         string memory benefitType,
         uint256 benefitAmount,
@@ -90,9 +92,11 @@ contract RefThrone is Ownable {
         string memory linkUrl
     ) external returns (uint256 throneId) {
         require(torAmount > 0, "At least 1 TOR is required");
-        require(!_isThroneInReview(msg.sender, serviceType, benefitType), "Already in review");
+        require(_torToken.balanceOf(msg.sender) > torAmount, "Not enough TOR balance.");
+        require(_torToken.allowance(msg.sender, address(this)) >= torAmount, "Insufficient allowance");
+        require(!_isThroneInReview(msg.sender, name, benefitType), "Already in review");
 
-        uint256 ownedThroneId = _findThroneId(Status.Owned, serviceType, benefitType);
+        uint256 ownedThroneId = _findThroneId(Status.Owned, name, benefitType);
         if (ownedThroneId > 0) {
             require(
                 benefitAmount > _thrones[ownedThroneId].benefitAmount ||
@@ -108,6 +112,7 @@ contract RefThrone is Ownable {
         uint256 newThroneId = _getNewThroneId();
 
         _thrones[newThroneId] = Throne({
+            name: name,
             id: newThroneId,
             serviceType: serviceType,
             benefitType: benefitType,
@@ -122,7 +127,7 @@ contract RefThrone is Ownable {
 
         _throneIds.push(newThroneId);
 
-        _deleteLostOrRejectedThrone(msg.sender, serviceType, benefitType);
+        _deleteLostOrRejectedThrone(msg.sender, name, benefitType);
 
         emit ThroneStatus(throneId, Status.InReview);
 
@@ -132,11 +137,15 @@ contract RefThrone is Ownable {
     function withdrawFromThrone(uint256 throneId) external returns (bool success) {
         require(_thrones[throneId].referrer == msg.sender);
         require(_thrones[throneId].status == Status.Owned || _thrones[throneId].status == Status.InReview);
-        require(_torDepositedByAddress[msg.sender] >= _thrones[throneId].torAmount);
 
-        _torToken.transferFrom(address(this), msg.sender, _thrones[throneId].torAmount);
-        _totalTorDeposited -= _thrones[throneId].torAmount;
-        _torDepositedByAddress[msg.sender] -= _thrones[throneId].torAmount;
+        uint256 torAmount = _thrones[throneId].torAmount;
+
+        require(_torDepositedByAddress[msg.sender] >= torAmount);
+        require(_torToken.balanceOf(address(this)) >= torAmount, "Not enough TOR balance.");
+
+        _torToken.transfer(msg.sender, torAmount);
+        _totalTorDeposited -= torAmount;
+        _torDepositedByAddress[msg.sender] -= torAmount;
 
         _deleteThrone(throneId);
 
@@ -145,6 +154,7 @@ contract RefThrone is Ownable {
 
     function modifyThroneInReview(
         uint256 throneId,
+        string memory name,
         string memory serviceType,
         string memory benefitType,
         string memory linkUrl
@@ -154,16 +164,17 @@ contract RefThrone is Ownable {
             "Only the throne in review can be modified"
         );
 
+        _thrones[throneId].name = name;
         _thrones[throneId].serviceType = serviceType;
         _thrones[throneId].benefitType = benefitType;
         _thrones[throneId].linkUrl = linkUrl;
     }
 
     function approveThrone(uint256 throneId) external onlyOwner {
-        string memory serviceType = _thrones[throneId].serviceType;
+        string memory name = _thrones[throneId].name;
         string memory benefitType = _thrones[throneId].benefitType;
 
-        uint256 currentThroneId = _findThroneId(Status.Owned, serviceType, benefitType);
+        uint256 currentThroneId = _findThroneId(Status.Owned, name, benefitType);
         if (currentThroneId > 0) {
             _lostThrone(currentThroneId);
         }
@@ -178,10 +189,14 @@ contract RefThrone is Ownable {
 
         require(referrer != address(0));
         require(_thrones[throneId].status == Status.InReview);
-        require(_torDepositedByAddress[referrer] >= _thrones[throneId].torAmount);
 
-        _torToken.transferFrom(address(this), referrer, _thrones[throneId].torAmount);
-        _totalTorDeposited -= _thrones[throneId].torAmount;
+        uint256 torAmount = _thrones[throneId].torAmount;
+
+        require(_torDepositedByAddress[referrer] >= torAmount);
+        require(_torToken.balanceOf(address(this)) >= torAmount, "Not enough TOR balance.");
+
+        _torToken.transfer(referrer, torAmount);
+        _totalTorDeposited -= torAmount;
 
         _thrones[throneId].status = Status.Rejected;
 
@@ -269,14 +284,14 @@ contract RefThrone is Ownable {
 
     function _findThroneId(
         Status status,
-        string memory serviceType,
+        string memory name,
         string memory benefitType
     ) private view returns (uint256) {
         for (uint i = 0; i < _throneIds.length; i++) {
             uint256 throneId = _throneIds[i];
 
             if (_thrones[throneId].status == status &&
-                _compareStrings(_thrones[throneId].serviceType, serviceType) &&
+                _compareStrings(_thrones[throneId].name, name) &&
                 _compareStrings(_thrones[throneId].benefitType, benefitType)) {
                 return throneId;
             }
@@ -287,7 +302,7 @@ contract RefThrone is Ownable {
 
     function _deleteLostOrRejectedThrone(
         address address_,
-        string memory serviceType,
+        string memory name,
         string memory benefitType
     ) private {
         uint length = _throneIds.length;
@@ -295,12 +310,13 @@ contract RefThrone is Ownable {
             uint256 throneId = _throneIds[i];
             if ((_thrones[throneId].status == Status.Lost || _thrones[throneId].status == Status.Rejected) &&
                 _thrones[throneId].referrer == address_ &&
-                _compareStrings(_thrones[throneId].serviceType, serviceType) &&
+                _compareStrings(_thrones[throneId].name, name) &&
                 _compareStrings(_thrones[throneId].benefitType, benefitType)
             ) {
                 _throneIds[i] = _throneIds[length - 1];
                 _throneIds.pop();
                 delete _thrones[throneId];
+                break;
             }
         }
     }
@@ -312,20 +328,21 @@ contract RefThrone is Ownable {
                 _throneIds[i] = _throneIds[length - 1];
                 _throneIds.pop();
                 delete _thrones[throneId];
+                break;
             }
         }
     }
 
     function _isThroneInReview(
         address address_,
-        string memory serviceType,
+        string memory name,
         string memory benefitType
     ) private view returns (bool) {
         for (uint i = 0; i < _throneIds.length; i++) {
             uint256 throneId = _throneIds[i];
 
             if (_thrones[throneId].referrer == address_ &&
-                _compareStrings(_thrones[throneId].serviceType, serviceType) &&
+                _compareStrings(_thrones[throneId].name, name) &&
                 _compareStrings(_thrones[throneId].benefitType, benefitType)) {
                 return true;
             }
