@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract UserContract {
 
@@ -24,7 +24,8 @@ contract UserContract {
 
     event BlacklistUpdated(address indexed _address, bool _isBlacklisted);
     event UserCreated(address indexed _address, string nickName, string xUrl, string uTubeUrl, string telegramUrl, string discordUrl);
-    event GenInvitaionCode(address indexed _address, string code);
+    event GenerateInvitaionCode(address indexed _address, string code);
+    event AddInvitee(address indexed inviter, address indexed invitee, string code);
 
     modifier onlyOwner(){
         require(msg.sender == _owner, "You are not the owner");
@@ -36,24 +37,15 @@ contract UserContract {
         _;
     }
 
-    modifier isUserCreated() {
-        require(bytes(_users[msg.sender].xUrl).length <= 0, "Invitation code already generated.");
-        _;
-
-    }
-
-    function concatenateStrings(string memory str1, string memory str2) internal pure returns (string memory) {
-        return string(abi.encodePacked(str1, str2));
-    }
-
-    function addInvitee(string memory code, address invitee) external returns (bool) {
+    function addInvitee(string memory code) external notBlacklisted returns (bool) {
 
         uint256 length = _invitationAddresses.length;
         for (uint256 i=0; i<length; i++){
 
             if(keccak256(abi.encodePacked(_invitationCode[_invitationAddresses[i]])) == keccak256(abi.encodePacked(code)))
             {
-                _invitees[_invitationAddresses[i]].push(invitee);
+                _invitees[_invitationAddresses[i]].push(msg.sender);
+                emit AddInvitee(_invitationAddresses[i], msg.sender, code);
                 return true;
             }
         }
@@ -61,33 +53,10 @@ contract UserContract {
         return false;
     }
 
-    function getInvitees() external view returns (address[] memory) {
+    function getInvitees() external view notBlacklisted returns (address[] memory) {
         return _invitees[msg.sender];
     }
 
-    function toString(uint256 value) internal pure returns (string memory) {
-        if (value == 0) {
-            return "0";
-        }
-
-        uint256 temp = value;
-        uint256 digits;
-
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-
-        bytes memory buffer = new bytes(digits);
-
-        while (value != 0) {
-            digits--;
-            buffer[digits] = bytes1(uint8(48 + (value % 10)));
-            value /= 10;
-        }
-
-        return string(buffer);
-    }
 
     function generateInvitationCode() external notBlacklisted returns (string memory) {
 
@@ -95,18 +64,17 @@ contract UserContract {
 
         _invitationSize++;
         bytes32 hashValue = keccak256(abi.encodePacked(msg.sender, block.timestamp));
-        string memory hashString  = concatenateStrings(toString(_invitationSize), string(abi.encodePacked(hashValue)));
 
-        _invitationCode[msg.sender] = hashString;
+        _invitationCode[msg.sender] = Strings.toString(uint256(hashValue));
         _invitationAddresses.push(msg.sender);
 
-        emit GenInvitaionCode(msg.sender, _invitationCode[msg.sender]);
+        emit GenerateInvitaionCode(msg.sender, _invitationCode[msg.sender]);
 
         return _invitationCode[msg.sender];
     }
 
-    function getInvitaionCode() external view returns (string memory){
-        return _invitationCode[msg.sender];
+    function getInvitaionCode(address account) external view notBlacklisted returns (string memory){
+        return _invitationCode[account];
     }
 
     function isUserInBlackList(address account) external view returns (bool) {
@@ -121,7 +89,7 @@ contract UserContract {
         return true;
     }
 
-    function setUserInfo(string memory nickName, string memory xUrl, string memory uTubeUrl, string memory telegramUrl, string memory discordUrl) external returns (bool) {
+    function setUserInfo(string memory nickName, string memory xUrl, string memory uTubeUrl, string memory telegramUrl, string memory discordUrl) external notBlacklisted returns (bool) {
 
         _users[msg.sender].nickName = nickName;
         _users[msg.sender].xUrl = xUrl;
@@ -136,22 +104,6 @@ contract UserContract {
 
     function getUserInfo() external view notBlacklisted returns (User memory) {
         return _users[msg.sender];
-    }
-
-    function setXurl(string memory url) external notBlacklisted {
-        _users[msg.sender].xUrl = url;
-    }
-
-    function setTelegramUrl(string memory url) external notBlacklisted {
-        _users[msg.sender].telegramUrl = url;
-    }
-
-    function setUtubeUrl(string memory url) external notBlacklisted {
-        _users[msg.sender].uTubeUrl = url;
-    }
-
-    function setDiscordUrl(string memory url) external notBlacklisted {
-        _users[msg.sender].discordUrl = url;
     }
 
 
