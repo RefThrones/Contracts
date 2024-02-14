@@ -51,7 +51,7 @@ contract RefThrone is Ownable {
         _addServiceType("DEX");
         _addServiceType("MISC");
 
-        _addBenefitType("Free Discount");
+        _addBenefitType("Fee Discount");
         _addBenefitType("USDT");
         _addBenefitType("USDC");
         _addBenefitType("BTC");
