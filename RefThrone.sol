@@ -66,6 +66,10 @@ contract RefThrone is Ownable {
         IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), msg.sender);
     }
 
+    function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
+        return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
+    }
+
     function addServiceType(string memory serviceType) public onlyOwner {
         _addServiceType(serviceType);
     }
