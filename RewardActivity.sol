@@ -14,9 +14,10 @@ contract RewardActivity {
     }
 
     // uint[] public reward_rates;
-    uint8 private _decimal=18;
-    uint private _seconds_per_day=24*60*60;
-    address private _owner;
+    uint8 private constant _decimal = 18;
+    uint private constant _seconds_per_day = 24*60*60;
+    uint private constant _history_per_page = 100;
+    address private immutable _owner;
 
     uint16 private _deposit_rate;
     uint16 private _withdraw_rate;
@@ -37,7 +38,7 @@ contract RewardActivity {
         uint total_points;
     } 
 
-    mapping(address account => ActVals[]) private _activity_history;
+    mapping(address account => ActVals[]) public activity_history;
 
 
     constructor() {
@@ -70,12 +71,40 @@ contract RewardActivity {
         _usurp_rate = 200;
     }
 
-    function getRewardRates() public view returns (uint16[8] memory) {
+    modifier onlyOwner(){
+        require(msg.sender == _owner, "You are not the owner");
+        _;
+    }
+
+    function _updateHistory(address account, ActVals memory actvals) private {
+        // ActVals(timestamp, act_type, tor_changes, tor_balance, activity_points, deposit_points, total_points)
+        activity_history[account].push(actvals);
+        // ActVals[] storage _my_activities = activity_history[account];
+        // _my_activities.push(actvals);
+        // activity_history[account] = _my_activities;
+    }
+
+    event DebugNum(address indexed account, uint256 a, uint256 b);
+    event DebugMsg(address indexed account, string str);
+
+    function _getLastAct(address account, uint timestamp) private view returns (ActVals memory) {
+        ActVals[] memory _my_acts = activity_history[account];
+        if (_my_acts.length > 0)
+            return _my_acts[_my_acts.length-1];
+        else
+            return ActVals(timestamp,ActType.DEPOSIT,0,0,0,0,0);
+    }
+
+    function _holdTorPoint(uint timestamp1, uint timestamp2, uint tor_balance) private pure returns (uint) {
+        return (timestamp1 - timestamp2) * tor_balance / 2000000; // * 0.0000005 // 216 point per tor,hour
+    }
+
+    function getRewardRates() public view onlyOwner returns (uint16[8] memory) {
         return [_deposit_rate, _withdraw_rate, _inviter_rate, _invitee_rate, _create_code_rate, _daily_rate, _throne_rate, _usurp_rate];
         // return reward_rates;
     }
 
-    function setRewardRate(ActType act_type, uint16 rate_value) public {
+    function setRewardRate(ActType act_type, uint16 rate_value) onlyOwner public {
         if (act_type == ActType.DEPOSIT) _deposit_rate = rate_value;
         else if (act_type == ActType.WITHDRAW) _withdraw_rate = rate_value;
         else if (act_type == ActType.INVITER) _inviter_rate = rate_value;
@@ -86,25 +115,12 @@ contract RewardActivity {
         else if (act_type == ActType.USURP) _usurp_rate = rate_value;
         
         // reward_rates[act_type] = rate_value;
-
     }
 
-    event DebugMsg(address indexed account, uint256 a, uint256 b);
-
-    function debugCheckIn(address account) public view returns (uint) {
-        ActVals[] memory _my_activities = _activity_history[account];
-        uint activity_len = _my_activities.length;
-        uint count = 0;
-        for (uint i=activity_len; i > 0; --i) {
-            ++count;
-        }
-        return count;
-    }
-
-    function isCheckIn(address account) public view returns (bool) {
+    function checkDuplicateCheckIn(address account) public view returns (bool) {
         uint _today = block.timestamp / _seconds_per_day;
         uint _act_day;
-        ActVals[] memory _my_activities = _activity_history[account];
+        ActVals[] memory _my_activities = activity_history[account];
         uint activity_len = _my_activities.length;
         
         for (uint i=activity_len; i > 0; --i) {
@@ -120,8 +136,23 @@ contract RewardActivity {
         return false;
     }
 
-    function dailyCheckIn() public {
-        
+    function doDailyCheckIn() public{
+        address account = msg.sender;
+        require(!checkDuplicateCheckIn(account), "Already Checked-in");
+        uint _timestamp = block.timestamp;
+        ActVals memory _last_act = _getLastAct(account, _timestamp);
+        uint deposit_points = _holdTorPoint(_timestamp, _last_act.timestamp, _last_act.tor_balance);
+        uint total_points = _last_act.total_points + _daily_rate * (10 ** _decimal) + deposit_points;
+
+        ActVals memory _new_act = ActVals(
+            block.timestamp, 
+            ActType.DAILY, 
+            0, 
+            _last_act.tor_balance, 
+            _daily_rate, 
+            deposit_points, 
+            total_points);
+        _updateHistory(account, _new_act);
     }
 
     function logActivity(
@@ -129,21 +160,41 @@ contract RewardActivity {
         uint timestamp,
         ActType act_type,
         uint tor_changes,
-        uint tor_balance
+        uint tor_balance,
+        uint eth_changes
     ) public {
         uint activity_points;
-        uint deposit_points;
-        uint total_points;
+        if (act_type == ActType.DEPOSIT)            activity_points = eth_changes * _deposit_rate;
+        else if (act_type == ActType.WITHDRAW)      activity_points = (10 ** _decimal) * _withdraw_rate;
+        else if (act_type == ActType.INVITER)       activity_points = (10 ** _decimal) * _inviter_rate;
+        else if (act_type == ActType.INVITEE)       activity_points = (10 ** _decimal) * _invitee_rate;
+        else if (act_type == ActType.CREATE_CODE)   activity_points = (10 ** _decimal) * _create_code_rate;
+        else if (act_type == ActType.DAILY)         activity_points = (10 ** _decimal) * _daily_rate;
+        else if (act_type == ActType.THRONE)        activity_points = (10 ** _decimal) * _throne_rate;
+        else if (act_type == ActType.USURP)         activity_points = (10 ** _decimal) * _usurp_rate;
 
-        ActVals[] storage _my_activities = _activity_history[account];
-        _my_activities.push(ActVals(timestamp, act_type, tor_changes, tor_balance, activity_points, deposit_points, total_points));
-        _activity_history[account] = _my_activities;
+        ActVals memory _last_act = _getLastAct(account, timestamp);
+        uint deposit_points = _holdTorPoint(timestamp, _last_act.timestamp, _last_act.tor_balance);
+        uint total_points = _last_act.total_points + activity_points + deposit_points;
+
+        activity_history[account].push(
+            ActVals(
+                timestamp, 
+                act_type, 
+                tor_changes, 
+                tor_balance, 
+                activity_points, 
+                deposit_points, 
+                total_points));
+    }
+
+    function getHistory(address account, uint page) public view returns (ActVals[] memory){
+
     }
 
     function getOwner() public view returns (address) {
         return _owner;
     }
-
 }
 
 
