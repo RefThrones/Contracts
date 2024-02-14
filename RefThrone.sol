@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./IBlast.sol";
 
 contract RefThrone is Ownable {
     event ThroneStatus(uint256 throneId, Status status);
@@ -45,6 +46,8 @@ contract RefThrone is Ownable {
     // uint256 private _withdrawFeeRate = 2;
 
     constructor(address torTokenAddress) Ownable(msg.sender) {
+        IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
+
         _torToken = IERC20(torTokenAddress);
 
         _addServiceType("CEX");
@@ -56,6 +59,11 @@ contract RefThrone is Ownable {
         _addBenefitType("USDC");
         _addBenefitType("BTC");
         _addBenefitType("ETH");
+    }
+
+    function claimAllGas() external onlyOwner {
+        // This function is public meaning anyone can claim the gas
+        IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), msg.sender);
     }
 
     function addServiceType(string memory serviceType) public onlyOwner {
