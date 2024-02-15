@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-contract UserHistory {
+import "./IUserHistory.sol";
+
+contract UserHistory is IUserHistory {
     enum ActType {
         DEPOSIT,    // 100 * ETH
         WITHDRAW,   // 20
@@ -31,11 +33,11 @@ contract UserHistory {
     struct ActVals {
         uint timestamp;
         ActType act_type;
-        int tor_changes;
-        uint tor_balance;
-        uint activity_points;
-        uint deposit_points;
-        uint total_points;
+        uint256 tor_changes;
+        uint256 tor_balance;
+        uint256 activity_points;
+        uint256 deposit_points;
+        uint256 total_points;
     } 
 
     mapping(address account => ActVals[]) private activity_history;
@@ -132,14 +134,14 @@ contract UserHistory {
         address account,
         uint timestamp,
         ActType act_type,
-        int tor_changes,
-        uint tor_balance
+        uint256 tor_changes,
+        uint256 tor_balance
     ) private {
         ActVals memory _last_act = _getLastAct(account, timestamp);
 
         uint activity_points;
         if (act_type == ActType.DEPOSIT) { // for DEPOSIT, "tor_change" include 10**18 unit already
-            activity_points = uint(tor_changes/5000) * _deposit_rate;
+            activity_points = (tor_changes/5000) * _deposit_rate;
         } else { 
             activity_points = (10 ** _decimal); // except DEPOSIT, need 10**18 unit for rate calculate
             if (act_type == ActType.WITHDRAW) {
@@ -170,31 +172,31 @@ contract UserHistory {
                 total_points));
     }
 
-    function setDepositActivity(address account, uint timestamp, int tor_changes, uint tor_balance) public {
+    function setDepositActivity(address account, uint timestamp, uint256 tor_changes, uint256 tor_balance) external {
         _AllActivity(account, timestamp, ActType.DEPOSIT, tor_changes, tor_balance);
     }
 
-    function setWithdrawActivity(address account, uint timestamp, int tor_changes, uint tor_balance) public {
+    function setWithdrawActivity(address account, uint timestamp, uint256 tor_changes, uint256 tor_balance) external {
         _AllActivity(account, timestamp, ActType.WITHDRAW, tor_changes, tor_balance);
     }
 
-    function setInviterActivity(address account, uint timestamp) public {
+    function setInviterActivity(address account, uint timestamp) external {
         _AllActivity(account, timestamp, ActType.INVITER, 0, 0);
     }
 
-    function setInviteeActivity(address account, uint timestamp) public {
+    function setInviteeActivity(address account, uint timestamp) external {
         _AllActivity(account, timestamp, ActType.INVITEE, 0, 0);
     }
 
-    function setGenCodeActivity(address account, uint timestamp) public {
+    function setGenCodeActivity(address account, uint timestamp) external {
         _AllActivity(account, timestamp, ActType.GEN_CODE, 0, 0);
     }
 
-    function setThroneActivity(address account, uint timestamp) public {
+    function setThroneActivity(address account, uint timestamp) external {
         _AllActivity(account, timestamp, ActType.THRONE, 0, 0);
     }
 
-    function setUsurpActivity(address account, uint timestamp) public {
+    function setUsurpActivity(address account, uint timestamp) external {
         _AllActivity(account, timestamp, ActType.USURP, 0, 0);
     }
 
