@@ -12,6 +12,9 @@ contract EthTreasuryContract {
     //Delegate token
     mapping(address account => mapping(address spender => uint256)) private _allowances;
 
+    mapping(address account => uint256) private _torBalances;
+    mapping(address account => uint256) private _ethBalances;
+
     uint256 public _totalTorBalance=0;
     uint256 public _totalEthBalance=0;
     uint256 public _exchangeRate;
@@ -114,6 +117,9 @@ contract EthTreasuryContract {
 
         _totalTorBalance+=torTokenAmount;
 
+        _ethBalances[msg.sender]+=ethAmount;
+        _torBalances[msg.sender]+=torTokenAmount;
+
         _token.transfer(msg.sender, torTokenAmount);
 
         emit Swap(msg.sender, ethAmount, torTokenAmount);
@@ -135,6 +141,9 @@ contract EthTreasuryContract {
         ethAmount = (ethAmount * (100 - _withdrawFeeRate)) / 100;
         _totalEthBalance -= ethAmount;
 
+        _ethBalances[msg.sender]-=ethAmount;
+        _torBalances[msg.sender]-=torTokenAmount;
+
         // Transfer deposited ERC-20 tokens back to the sender
         _token.transferFrom(msg.sender, address(this), tokenAmount);
 
@@ -145,5 +154,11 @@ contract EthTreasuryContract {
         emit Withdrawal(msg.sender, ethAmount);
     }
 
+    function getSwappedUserEthBalance(address account) external view returns(unit256){
+        return _ethBalances[msg.sender];
+    }
 
+    function getSwappedUserTorBalance(address account) external view returns(unit256){
+        return _torBalances[msg.sender];
+    }
 }
