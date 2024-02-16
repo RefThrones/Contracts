@@ -123,7 +123,7 @@ contract EthTreasuryContract is Ownable{
         require(msg.value > 0, "ETH amount must be greater than 0");
 
         // deposit fee 1%
-        uint256 ethAmount =  msg.value / ((100 + _depositFeeRate) / 100);
+        uint256 ethAmount =  msg.value / (100 + _depositFeeRate) * 100;
 
         _totalEthBalance += ethAmount;
         uint256 torTokenAmount = (ethAmount * _exchangeRate);
