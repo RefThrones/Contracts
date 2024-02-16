@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "./IUserHistory.sol";
 
-contract UserHistory is IUserHistory {
+contract UserHistory is IUserHistory, Ownable {
     enum ActType {
         DEPOSIT,    // 100 * ETH
         WITHDRAW,   // 20
@@ -19,7 +21,9 @@ contract UserHistory is IUserHistory {
     uint8 private constant _decimal = 18;
     uint private constant _seconds_per_day = 24*60*60;
     uint private constant _history_per_page = 100;
-    address private immutable _owner;
+
+    mapping(address whitelist => bool) private whitelist_mapping;
+    address[] private whitelist_list;
 
     uint16 private _deposit_rate;
     uint16 private _withdraw_rate;
@@ -42,10 +46,7 @@ contract UserHistory is IUserHistory {
 
     mapping(address account => ActVals[]) private activity_history;
 
-
-    constructor() {
-        _owner = msg.sender;
-
+    constructor() Ownable(msg.sender)  {
         _deposit_rate = 100;
         _withdraw_rate = 20;
         _inviter_rate = 250;
@@ -56,8 +57,8 @@ contract UserHistory is IUserHistory {
         _usurp_rate = 200;
     }
 
-    modifier onlyOwner(){
-        require(msg.sender == _owner, "You are not the owner");
+    modifier onlyTorContract(){
+        require(whitelist_mapping[msg.sender], "You are not the RefThrone Contract.");
         _;
     }
 
@@ -78,7 +79,7 @@ contract UserHistory is IUserHistory {
         // return reward_rates;
     }
 
-    function setRewardRate(ActType act_type, uint16 rate_value) onlyOwner public {
+    function setRewardRate(ActType act_type, uint16 rate_value) public onlyOwner {
         if (act_type == ActType.DEPOSIT)        _deposit_rate = rate_value;
         else if (act_type == ActType.WITHDRAW)  _withdraw_rate = rate_value;
         else if (act_type == ActType.INVITER)   _inviter_rate = rate_value;
@@ -87,8 +88,17 @@ contract UserHistory is IUserHistory {
         else if (act_type == ActType.DAILY)     _daily_rate = rate_value;
         else if (act_type == ActType.THRONE)    _throne_rate = rate_value;
         else if (act_type == ActType.USURP)     _usurp_rate = rate_value;
-        
+
         // reward_rates[act_type] = rate_value;
+    }
+
+    function setWhiteListContract(address ref_contract) public onlyOwner {
+        whitelist_mapping[ref_contract] = true;
+        whitelist_list.push(ref_contract);
+    }
+
+    function getWhiteListContract() public view onlyOwner returns(address[] memory) {
+        return whitelist_list;
     }
 
     function checkDuplicateCheckIn(address account) public view returns (bool) {
@@ -110,7 +120,7 @@ contract UserHistory is IUserHistory {
         return false;
     }
 
-    function doDailyCheckIn() public{
+    function doDailyCheckIn() public {
         address account = msg.sender;
         require(!checkDuplicateCheckIn(account), "Already Checked-in");
         uint _timestamp = block.timestamp;
@@ -130,7 +140,7 @@ contract UserHistory is IUserHistory {
             total_points));
     }
 
-    function _AllActivity(
+    function _AllActivity (
         address account,
         uint timestamp,
         ActType act_type,
@@ -172,31 +182,31 @@ contract UserHistory is IUserHistory {
                 total_points));
     }
 
-    function setDepositActivity(address account, uint timestamp, uint256 tor_changes, uint256 tor_balance) external {
+    function setDepositActivity(address account, uint timestamp, uint256 tor_changes, uint256 tor_balance) external onlyTorContract {
         _AllActivity(account, timestamp, ActType.DEPOSIT, tor_changes, tor_balance);
     }
 
-    function setWithdrawActivity(address account, uint timestamp, uint256 tor_changes, uint256 tor_balance) external {
+    function setWithdrawActivity(address account, uint timestamp, uint256 tor_changes, uint256 tor_balance) external onlyTorContract {
         _AllActivity(account, timestamp, ActType.WITHDRAW, tor_changes, tor_balance);
     }
 
-    function setInviterActivity(address account, uint timestamp) external {
+    function setInviterActivity(address account, uint timestamp) external onlyTorContract {
         _AllActivity(account, timestamp, ActType.INVITER, 0, 0);
     }
 
-    function setInviteeActivity(address account, uint timestamp) external {
+    function setInviteeActivity(address account, uint timestamp) external onlyTorContract {
         _AllActivity(account, timestamp, ActType.INVITEE, 0, 0);
     }
 
-    function setGenCodeActivity(address account, uint timestamp) external {
+    function setGenCodeActivity(address account, uint timestamp) external onlyTorContract {
         _AllActivity(account, timestamp, ActType.GEN_CODE, 0, 0);
     }
 
-    function setThroneActivity(address account, uint timestamp) external {
+    function setThroneActivity(address account, uint timestamp) external onlyTorContract {
         _AllActivity(account, timestamp, ActType.THRONE, 0, 0);
     }
 
-    function setUsurpActivity(address account, uint timestamp) external {
+    function setUsurpActivity(address account, uint timestamp) external onlyTorContract {
         _AllActivity(account, timestamp, ActType.USURP, 0, 0);
     }
 
@@ -231,10 +241,6 @@ contract UserHistory is IUserHistory {
 
     function getHistory(address account) public view returns (ActVals[] memory){
         return getHistory(account, 1, 100);
-    }
-
-    function getOwner() public view returns (address) {
-        return _owner;
     }
 }
 
