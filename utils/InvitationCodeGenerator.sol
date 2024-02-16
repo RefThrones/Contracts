@@ -5,7 +5,7 @@ contract InvitationCodeGenerator {
     bytes32 private constant _base32hexChars = "123456789ABCDEFGHJKLMNPQRSTUVXYZ";
     string private _currentString = "00000";
 
-    function generateCode() public returns (string memory) {
+    function generateCode() internal returns (string memory) {
         return encodeBase32hex(_getNextAlphanumericString());
     }
 
@@ -41,7 +41,7 @@ contract InvitationCodeGenerator {
         return keccak256(bytes(_currentString)) == keccak256(bytes("ZZZZZ"));
     }
 
-    function encodeBase32hex(string memory input) public pure returns (string memory) {
+    function encodeBase32hex(string memory input) internal pure returns (string memory) {
         bytes memory inputData = bytes(input);
         bytes memory encodedData = new bytes(inputData.length * 8 / 5 + 1);
 
