@@ -24,8 +24,10 @@ contract InvitationCodeGenerator {
         for (uint256 i = currentBytes.length - 1; i >= 0; i--) {
             if (currentBytes[i] == bytes1("9")) {
                 currentBytes[i] = bytes1("a");
+                break;
             } else if (currentBytes[i] == bytes1("z")) {
                 currentBytes[i] = bytes1("A");
+                break;
             } else if (currentBytes[i] == bytes1("Z")) {
                 currentBytes[i] = bytes1("0");
             } else {
@@ -41,7 +43,7 @@ contract InvitationCodeGenerator {
         return keccak256(bytes(_currentString)) == keccak256(bytes("ZZZZZ"));
     }
 
-    function encodeBase32hex(string memory input) internal pure returns (string memory) {
+    function encodeBase32hex(string memory input) public pure returns (string memory) {
         bytes memory inputData = bytes(input);
         require(inputData.length == 5, "Input length should be 5");
 
