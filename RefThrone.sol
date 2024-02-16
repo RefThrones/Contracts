@@ -189,15 +189,20 @@ contract RefThrone is Ownable {
     }
 
     function approveThrone(uint256 throneId) external onlyOwner {
+        address referrer = _thrones[throneId].referrer;
+
+        require(referrer != address(0));
+        require(_thrones[throneId].status == Status.InReview);
+
         string memory name = _thrones[throneId].name;
         string memory benefitType = _thrones[throneId].benefitType;
 
         uint256 currentThroneId = _findThroneId(Status.Owned, name, benefitType);
         if (currentThroneId > 0) {
             _lostThrone(currentThroneId);
-            _userHistory.setUsurpActivity(_thrones[throneId].referrer, block.timestamp);
+            _userHistory.setUsurpActivity(referrer, block.timestamp);
         } else {
-            _userHistory.setThroneActivity(_thrones[throneId].referrer, block.timestamp);
+            _userHistory.setThroneActivity(referrer, block.timestamp);
         }
 
         _thrones[throneId].status = Status.Owned;
