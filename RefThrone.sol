@@ -109,7 +109,6 @@ contract RefThrone is Ownable {
         uint256 torAmount,
         string memory linkUrl
     ) external returns (uint256 throneId) {
-        require(torAmount > 0, "At least 1 TOR is required");
         require(_torToken.balanceOf(msg.sender) > torAmount, "Not enough TOR balance.");
         require(_torToken.allowance(msg.sender, address(this)) >= torAmount, "Insufficient allowance");
         require(!_isThroneInReview(msg.sender, name, benefitType), "Already in review");
@@ -155,11 +154,12 @@ contract RefThrone is Ownable {
         uint256 ownedBenefitAmount, uint256 ownedTorAmount,
         uint256 challengerBenefitAmount, uint256 challengerTorAmount
     ) private pure {
-            require(
-                challengerBenefitAmount > ownedBenefitAmount ||
-                challengerTorAmount > ownedTorAmount,
-                "Either benefit or TOR amount should be greater than current throne"
-            );
+        require(challengerTorAmount > 0, "At least 1 TOR is required");
+        require(
+            (challengerBenefitAmount > ownedBenefitAmount) ||
+            ((challengerBenefitAmount == ownedBenefitAmount) && (challengerTorAmount > ownedTorAmount)),
+            "Either benefit or TOR amount should be greater than current throne"
+        );
     }
 
     function withdrawFromThrone(uint256 throneId) external returns (bool success) {
