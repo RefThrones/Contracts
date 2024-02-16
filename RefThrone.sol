@@ -383,6 +383,7 @@ contract RefThrone is Ownable {
             uint256 throneId = _throneIds[i];
 
             if (_thrones[throneId].referrer == address_ &&
+                _thrones[throneId].status == Status.InReview &&
                 _compareStrings(_thrones[throneId].name, name) &&
                 _compareStrings(_thrones[throneId].benefitType, benefitType)) {
                 return true;
