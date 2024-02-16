@@ -163,8 +163,11 @@ contract RefThrone is Ownable {
     }
 
     function withdrawFromThrone(uint256 throneId) external returns (bool success) {
-        require(_thrones[throneId].referrer == msg.sender);
-        require(_thrones[throneId].status == Status.Owned || _thrones[throneId].status == Status.InReview);
+        require(_thrones[throneId].referrer == msg.sender, "addresses are not match between referrer and the sender");
+        require(
+            _thrones[throneId].status == Status.Owned || _thrones[throneId].status == Status.InReview,
+            "The throne is not in the state of Owned or InReview"
+        );
 
         _withdraw(msg.sender, _thrones[throneId].torAmount);
 
@@ -206,8 +209,11 @@ contract RefThrone is Ownable {
     function approveThrone(uint256 throneId) external onlyOwner {
         address referrer = _thrones[throneId].referrer;
 
-        require(referrer != address(0));
-        require(_thrones[throneId].status == Status.InReview);
+        require(referrer != address(0), "Invalid referrer address");
+        require(
+            _thrones[throneId].status == Status.InReview,
+            "The throne is not in the state of InReview"
+        );
 
         string memory name = _thrones[throneId].name;
         string memory benefitType = _thrones[throneId].benefitType;
@@ -231,8 +237,8 @@ contract RefThrone is Ownable {
     }
 
     function rejectThrone(uint256 throneId) external onlyOwner {
-        require(_thrones[throneId].id > 0);
-        require(_thrones[throneId].status == Status.InReview);
+        require(_thrones[throneId].id > 0, "Invalid throne id");
+        require(_thrones[throneId].status == Status.InReview, "The throne is not in the state of InReview");
 
         _withdraw(_thrones[throneId].referrer, _thrones[throneId].torAmount);
 
@@ -242,8 +248,8 @@ contract RefThrone is Ownable {
     }
 
     function _lostThrone(uint256 throneId) private onlyOwner {
-        require(_thrones[throneId].id > 0);
-        require(_thrones[throneId].status == Status.Owned);
+        require(_thrones[throneId].id > 0, "Invalid throne id");
+        require(_thrones[throneId].status == Status.Owned, "The throne is not in the state of Owned");
 
         _withdraw(_thrones[throneId].referrer, _thrones[throneId].torAmount);
 
@@ -298,7 +304,7 @@ contract RefThrone is Ownable {
     }
 
     function getThroneById(uint256 throneId) public view returns (Throne memory) {
-        require(_thrones[throneId].id > 0);
+        require(_thrones[throneId].id > 0, "Invalid throne id");
         return _thrones[throneId];
     }
 
