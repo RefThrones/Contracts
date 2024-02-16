@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "./IUserHistory.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract UserContract {
+contract UserContract is Ownable{
 
     address private _owner;
     uint256 private _invitationSize=0;
+    IUserHistory private _historyToken;
 
     struct User {
         string nickName;
@@ -27,14 +30,24 @@ contract UserContract {
     event GenerateInvitaionCode(address indexed _address, string code);
     event AddInvitee(address indexed inviter, address indexed invitee, string code);
 
-    modifier onlyOwner(){
-        require(msg.sender == _owner, "You are not the owner");
-        _;
-    }
 
     modifier notBlacklisted() {
         require(!blacklist[msg.sender], "You are blacklisted");
         _;
+    }
+
+    constructor(address historyToken) Ownable(msg.sender) {
+        _owner = msg.sender;
+        _historyToken = IUserHistory(historyToken);
+    }
+
+    function updateUserHistoryContractAddress(address historyToken) external onlyOwner returns (bool){
+        _historyToken = IUserHistory(historyToken);
+        return true;
+    }
+
+    function getUserHistoryContractAddress() external onlyOwner view returns (address){
+        return address(_historyToken);
     }
 
     function addInvitee(string memory code) external notBlacklisted returns (bool) {
@@ -45,6 +58,8 @@ contract UserContract {
             if(keccak256(abi.encodePacked(_invitationCode[_invitationAddresses[i]])) == keccak256(abi.encodePacked(code)))
             {
                 _invitees[_invitationAddresses[i]].push(msg.sender);
+                _historyToken.setInviteeActivity(msg.sender, block.timestamp);
+                _historyToken.setInviterActivity(_invitationAddresses[i], block.timestamp);
                 emit AddInvitee(_invitationAddresses[i], msg.sender, code);
                 return true;
             }
@@ -68,6 +83,7 @@ contract UserContract {
         _invitationCode[msg.sender] = Strings.toString(uint256(hashValue));
         _invitationAddresses.push(msg.sender);
 
+        _historyToken.setGenCodeActivity(msg.sender, block.timestamp);
         emit GenerateInvitaionCode(msg.sender, _invitationCode[msg.sender]);
 
         return _invitationCode[msg.sender];
@@ -97,6 +113,7 @@ contract UserContract {
         _users[msg.sender].telegramUrl = telegramUrl;
         _users[msg.sender].discordUrl = discordUrl;
 
+        _historyToken.setUsurpActivity(msg.sender, block.timestamp);
         emit UserCreated(msg.sender, nickName, xUrl, uTubeUrl, telegramUrl, discordUrl);
 
         return true;
