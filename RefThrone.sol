@@ -30,8 +30,13 @@ contract RefThrone is Ownable {
         uint256 timestamp;
     }
 
+    IBlast private _blast;
     IERC20 private _torToken;
     IUserHistory private _userHistory;
+
+    address private _blastContractAddress;
+    address private _torTokenContractAddress;
+    address private _userHistoryContractAddress;
 
     string[] private _serviceTypes;
     string[] private _benefitTypes;
@@ -48,13 +53,12 @@ contract RefThrone is Ownable {
     // uint256 private _withdrawFeeRate = 2;
 
     constructor(
-        address torTokenAddress,
+        address torTokenContractAddress,
         address userHistoryContractAddress
     ) Ownable(msg.sender) {
-        IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
-        _userHistory = IUserHistory(userHistoryContractAddress);
-
-        _torToken = IERC20(torTokenAddress);
+        setBlastContractAddress(0x4300000000000000000000000000000000000002);
+        setTorTokenContractAddress(torTokenContractAddress);
+        setUserHistoryContractAddress(userHistoryContractAddress);
 
         _addServiceType("CEX");
         _addServiceType("DEX");
@@ -67,13 +71,41 @@ contract RefThrone is Ownable {
         _addBenefitType("ETH");
     }
 
+    function setBlastContractAddress(address blastContractAddress) public onlyOwner {
+        _blastContractAddress = blastContractAddress;
+        _blast = IBlast(_blastContractAddress);
+        _blast.configureClaimableGas();
+    }
+
+    function getBlastContractAddress() external view returns (address) {
+        return _blastContractAddress;
+    }
+
+    function setTorTokenContractAddress(address torTokenContractAddress) public onlyOwner {
+        _torTokenContractAddress = torTokenContractAddress;
+        _torToken = IERC20(_torTokenContractAddress);
+    }
+
+    function getTorTokenContractAddress() external view returns (address) {
+        return _torTokenContractAddress;
+    }
+
+    function setUserHistoryContractAddress(address userHistoryContractAddress) public onlyOwner {
+        _userHistoryContractAddress = userHistoryContractAddress;
+        _userHistory = IUserHistory(_userHistoryContractAddress);
+    }
+
+    function getUserHistoryContractAddress() external view returns (address) {
+        return _userHistoryContractAddress;
+    }
+
     function claimAllGas() external onlyOwner {
         // This function is public meaning anyone can claim the gas
-        IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), msg.sender);
+        _blast.claimAllGas(address(this), msg.sender);
     }
 
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
-        return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
+        return _blast.readGasParams(address(this));
     }
 
     function addServiceType(string memory serviceType) public onlyOwner {
