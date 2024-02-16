@@ -43,7 +43,9 @@ contract InvitationCodeGenerator {
 
     function encodeBase32hex(string memory input) internal pure returns (string memory) {
         bytes memory inputData = bytes(input);
-        bytes memory encodedData = new bytes(inputData.length * 8 / 5 + 1);
+        require(inputData.length == 5, "Input length should be 5");
+
+        bytes memory encodedData = new bytes(8);
 
         uint256 encodedIndex = 0;
         uint256 currentByte = 0;
