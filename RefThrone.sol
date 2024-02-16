@@ -116,10 +116,9 @@ contract RefThrone is Ownable {
 
         uint256 ownedThroneId = _findThroneId(Status.Owned, name, benefitType);
         if (ownedThroneId > 0) {
-            require(
-                benefitAmount > _thrones[ownedThroneId].benefitAmount ||
-                torAmount > _thrones[ownedThroneId].torAmount,
-                "Either benefit or TOR amount should be greater than current throne"
+            _checkUsurpCondition(
+                _thrones[ownedThroneId].benefitAmount, _thrones[ownedThroneId].torAmount,
+                benefitAmount, torAmount
             );
         }
 
@@ -150,6 +149,17 @@ contract RefThrone is Ownable {
         emit ThroneStatus(throneId, Status.InReview);
 
         return newThroneId;
+    }
+
+    function _checkUsurpCondition(
+        uint256 ownedBenefitAmount, uint256 ownedTorAmount,
+        uint256 challengerBenefitAmount, uint256 challengerTorAmount
+    ) private pure {
+            require(
+                challengerBenefitAmount > ownedBenefitAmount ||
+                challengerTorAmount > ownedTorAmount,
+                "Either benefit or TOR amount should be greater than current throne"
+            );
     }
 
     function withdrawFromThrone(uint256 throneId) external returns (bool success) {
@@ -199,6 +209,11 @@ contract RefThrone is Ownable {
 
         uint256 currentThroneId = _findThroneId(Status.Owned, name, benefitType);
         if (currentThroneId > 0) {
+            _checkUsurpCondition(
+                _thrones[currentThroneId].benefitAmount, _thrones[currentThroneId].torAmount,
+                _thrones[throneId].benefitAmount, _thrones[throneId].torAmount
+            );
+
             _lostThrone(currentThroneId);
             _userHistory.setUsurpActivity(referrer, block.timestamp);
         } else {
