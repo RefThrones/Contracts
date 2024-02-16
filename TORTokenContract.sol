@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract TORTokenContract {
+contract TORTokenContract is Ownable  {
 
     //TOR token balances
     mapping(address account => uint256) private _balances;
@@ -12,20 +13,16 @@ contract TORTokenContract {
     uint8 private _decimal=18;
     string public _name;
     string public _symbol;
-    address private _owner;    
+    address private _owner;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
-    modifier onlyOwner(){
-        require(msg.sender == _owner, "You are not the owner");
-        _;
-    }
 
-    constructor(string memory name, string memory symbol) {
+    constructor(string memory name, string memory symbol) Ownable(msg.sender) {
         _owner = msg.sender;
         _name = name;
-        _symbol = symbol;                    
+        _symbol = symbol;
         _totalSupply = 1_000_000_000 * (10**_decimal);
         _mint(_owner, _totalSupply);
     }
@@ -43,7 +40,7 @@ contract TORTokenContract {
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {
-        _transfer(msg.sender, to, amount);        
+        _transfer(msg.sender, to, amount);
         return true;
     }
 
@@ -68,7 +65,7 @@ contract TORTokenContract {
         require(_balances[from] >= amount, "ERC20: insufficient balance");
 
         _balances[from] -= amount;
-        _balances[to] += amount;        
+        _balances[to] += amount;
         emit Transfer(from, to, amount);
     }
 
@@ -79,6 +76,5 @@ contract TORTokenContract {
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
-    
-}
 
+}
