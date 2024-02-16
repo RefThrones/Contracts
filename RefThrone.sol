@@ -166,18 +166,23 @@ contract RefThrone is Ownable {
         require(_thrones[throneId].referrer == msg.sender);
         require(_thrones[throneId].status == Status.Owned || _thrones[throneId].status == Status.InReview);
 
-        uint256 torAmount = _thrones[throneId].torAmount;
-
-        require(_torDepositedByAddress[msg.sender] >= torAmount);
-        require(_torToken.balanceOf(address(this)) >= torAmount, "Not enough TOR balance.");
-
-        _torToken.transfer(msg.sender, torAmount);
-        _totalTorDeposited -= torAmount;
-        _torDepositedByAddress[msg.sender] -= torAmount;
+        _withdraw(msg.sender, _thrones[throneId].torAmount);
 
         _deleteThrone(throneId);
 
         return true;
+    }
+
+    function _withdraw(address address_, uint256 torAmountToWithdraw) private {
+        require(address_ != address(0), "Invalid address");
+        require(torAmountToWithdraw > 0, "Invalid TOR amount to withdraw");
+        require(_totalTorDeposited >= torAmountToWithdraw, "Not enough total TOR amount");
+        require(_torDepositedByAddress[address_] >= torAmountToWithdraw, "Not enough TOR deposited");
+        require(_torToken.balanceOf(address(this)) >= torAmountToWithdraw, "Not enough TOR balance.");
+
+        _torToken.transfer(address_, torAmountToWithdraw);
+        _totalTorDeposited -= torAmountToWithdraw;
+        _torDepositedByAddress[address_] -= torAmountToWithdraw;
     }
 
     function modifyThroneInReview(
@@ -226,18 +231,10 @@ contract RefThrone is Ownable {
     }
 
     function rejectThrone(uint256 throneId) external onlyOwner {
-        address referrer = _thrones[throneId].referrer;
-
-        require(referrer != address(0));
+        require(_thrones[throneId].id > 0);
         require(_thrones[throneId].status == Status.InReview);
 
-        uint256 torAmount = _thrones[throneId].torAmount;
-
-        require(_torDepositedByAddress[referrer] >= torAmount);
-        require(_torToken.balanceOf(address(this)) >= torAmount, "Not enough TOR balance.");
-
-        _torToken.transfer(referrer, torAmount);
-        _totalTorDeposited -= torAmount;
+        _withdraw(_thrones[throneId].referrer, _thrones[throneId].torAmount);
 
         _thrones[throneId].status = Status.Rejected;
 
@@ -248,13 +245,7 @@ contract RefThrone is Ownable {
         require(_thrones[throneId].id > 0);
         require(_thrones[throneId].status == Status.Owned);
 
-        address referrer = _thrones[throneId].referrer;
-
-        require(_torDepositedByAddress[referrer] >= _thrones[throneId].torAmount);
-
-        _torToken.transfer(referrer, _thrones[throneId].torAmount);
-        _totalTorDeposited -= _thrones[throneId].torAmount;
-        _torDepositedByAddress[referrer] -= _thrones[throneId].torAmount;
+        _withdraw(_thrones[throneId].referrer, _thrones[throneId].torAmount);
 
         _thrones[throneId].status = Status.Lost;
 
