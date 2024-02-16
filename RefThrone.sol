@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IBlast.sol";
+import "./IUserHistory.sol";
 
 contract RefThrone is Ownable {
     event ThroneStatus(uint256 throneId, Status status);
@@ -30,6 +31,7 @@ contract RefThrone is Ownable {
     }
 
     IERC20 private _torToken;
+    IUserHistory private _userHistory;
 
     string[] private _serviceTypes;
     string[] private _benefitTypes;
@@ -45,8 +47,12 @@ contract RefThrone is Ownable {
     // uint256 private _depositeFeeRate = 1;
     // uint256 private _withdrawFeeRate = 2;
 
-    constructor(address torTokenAddress) Ownable(msg.sender) {
+    constructor(
+        address torTokenAddress,
+        address userHistoryContractAddress
+    ) Ownable(msg.sender) {
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
+        _userHistory = IUserHistory(userHistoryContractAddress);
 
         _torToken = IERC20(torTokenAddress);
 
@@ -189,6 +195,9 @@ contract RefThrone is Ownable {
         uint256 currentThroneId = _findThroneId(Status.Owned, name, benefitType);
         if (currentThroneId > 0) {
             _lostThrone(currentThroneId);
+            _userHistory.setUsurpActivity(_thrones[throneId].referrer, block.timestamp);
+        } else {
+            _userHistory.setThroneActivity(_thrones[throneId].referrer, block.timestamp);
         }
 
         _thrones[throneId].status = Status.Owned;
