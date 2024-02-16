@@ -252,7 +252,7 @@ contract RefThrone is Ownable {
 
         require(_torDepositedByAddress[referrer] >= _thrones[throneId].torAmount);
 
-        _torToken.transferFrom(address(this), referrer, _thrones[throneId].torAmount);
+        _torToken.transfer(referrer, _thrones[throneId].torAmount);
         _totalTorDeposited -= _thrones[throneId].torAmount;
         _torDepositedByAddress[referrer] -= _thrones[throneId].torAmount;
 
