@@ -2,9 +2,10 @@
 pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./IUserHistory.sol";
+import "./InvitationCodeGenerator.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract UserContract is Ownable{
+contract UserContract is Ownable, InvitationCodeGenerator{
 
     address private _owner;
     uint256 private _invitationSize=0;
@@ -78,9 +79,8 @@ contract UserContract is Ownable{
         require(bytes(_invitationCode[msg.sender]).length <= 0, "Invitation code already generated.");
 
         _invitationSize++;
-        bytes32 hashValue = keccak256(abi.encodePacked(msg.sender, block.timestamp));
 
-        _invitationCode[msg.sender] = Strings.toString(uint256(hashValue));
+        _invitationCode[msg.sender] = generateCode();
         _invitationAddresses.push(msg.sender);
 
         _historyToken.setGenCodeActivity(msg.sender, block.timestamp);
