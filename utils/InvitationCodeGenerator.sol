@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 contract InvitationCodeGenerator {
-    bytes32 private constant _base32hexChars = "123456789ABCDEFGHJKLMNPQRSTUVXYZ";
+    bytes32 private constant _base32hexChars = "123456789ABCDEFGHJKLMNPQRTUVWXYZ";
     string private _currentString = "00000";
 
     function generateCode() internal returns (string memory) {
