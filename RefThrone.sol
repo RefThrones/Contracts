@@ -209,6 +209,18 @@ contract RefThrone is Ownable {
         return true;
     }
 
+    function cancelThrone(uint256 throneId) external onlyOwner {
+        require(_thrones[throneId].id > 0, "Invalid throne id");
+        require(
+            _thrones[throneId].status == Status.Owned,
+            "The throne is not in the state of Owned"
+        );
+
+        _withdraw(msg.sender, _thrones[throneId].torAmount);
+
+        _deleteThrone(throneId);
+    }
+
     function _withdraw(address address_, uint256 torAmountToWithdraw) private {
         require(address_ != address(0), "Invalid address");
         require(torAmountToWithdraw > 0, "Invalid TOR amount to withdraw");
