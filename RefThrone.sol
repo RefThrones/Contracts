@@ -108,27 +108,27 @@ contract RefThrone is Ownable {
         return _blast.readGasParams(address(this));
     }
 
-    function addServiceType(string memory serviceType) public onlyOwner {
+    function addServiceType(string memory serviceType) external onlyOwner {
         _addServiceType(serviceType);
     }
 
-    function getServiceTypes() public view returns (string[] memory) {
+    function getServiceTypes() external view returns (string[] memory) {
         return _serviceTypes;
     }
 
-    function addBenefitType(string memory benefitType) public onlyOwner {
+    function addBenefitType(string memory benefitType) external onlyOwner {
         _addBenefitType(benefitType);
     }
 
-    function getBenefitTypes() public view returns (string[] memory) {
+    function getBenefitTypes() external view returns (string[] memory) {
         return _benefitTypes;
     }
 
-    function getTotalTorDeposited() public view returns (uint256 torAmount) {
+    function getTotalTorDeposited() external view returns (uint256 torAmount) {
         return _totalTorDeposited;
     }
 
-    function getTorDepositedByAddress(address address_) public view returns (uint256 torAmount) {
+    function getTorDepositedByAddress(address address_) external view returns (uint256 torAmount) {
         return _torDepositedByAddress[address_];
     }
 
@@ -196,6 +196,7 @@ contract RefThrone is Ownable {
 
     function withdrawFromThrone(uint256 throneId) external returns (bool success) {
         require(_thrones[throneId].referrer == msg.sender, "addresses are not match between referrer and the sender");
+        require(_thrones[throneId].id > 0, "Invalid throne id");
         require(
             _thrones[throneId].status == Status.Owned || _thrones[throneId].status == Status.InReview,
             "The throne is not in the state of Owned or InReview"
@@ -290,7 +291,7 @@ contract RefThrone is Ownable {
         emit ThroneStatus(throneId, Status.Lost);
     }
 
-    function getAllOwnedThrones() public view returns (Throne[] memory) {
+    function getAllOwnedThrones() external view returns (Throne[] memory) {
         uint ownedThroneCount = _getThroneCountInStatus(Status.Owned);
 
         Throne[] memory ownedThrones = new Throne[](ownedThroneCount);
@@ -305,7 +306,7 @@ contract RefThrone is Ownable {
         return ownedThrones;
     }
 
-    function getAllThronesInReview() public view onlyOwner returns (Throne[] memory) {
+    function getAllThronesInReview() external view onlyOwner returns (Throne[] memory) {
         uint throneInReviewCount = _getThroneCountInStatus(Status.InReview);
 
         Throne[] memory thronesInReview = new Throne[](throneInReviewCount);
@@ -320,7 +321,7 @@ contract RefThrone is Ownable {
         return thronesInReview;
     }
 
-    function getThronesByAddress(address address_) public view returns (Throne[] memory) {
+    function getThronesByAddress(address address_) external view returns (Throne[] memory) {
         uint throneCount = _getThroneCountOfAddress(address_);
 
         Throne[] memory thrones = new Throne[](throneCount);
@@ -335,7 +336,7 @@ contract RefThrone is Ownable {
         return thrones;
     }
 
-    function getThroneById(uint256 throneId) public view returns (Throne memory) {
+    function getThroneById(uint256 throneId) external view returns (Throne memory) {
         require(_thrones[throneId].id > 0, "Invalid throne id");
         return _thrones[throneId];
     }
