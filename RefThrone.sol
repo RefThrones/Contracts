@@ -341,6 +341,10 @@ contract RefThrone is Ownable {
         return _thrones[throneId];
     }
 
+    function getOwnedThroneCount() external view returns (uint256) {
+        return _getThroneCountInStatus(Status.Owned);
+    }
+
     function _addServiceType(string memory serviceType) private {
         _serviceTypes.push(serviceType);
     }
