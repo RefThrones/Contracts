@@ -46,6 +46,7 @@ contract UserHistory is IUserHistory, Ownable {
 
     struct RankVals {
         address account;
+        uint timestamp;
         uint256 point;
     } 
 
@@ -84,20 +85,20 @@ contract UserHistory is IUserHistory, Ownable {
 
     function _calcRank(address account) private {
         ActVals memory _my_acts = activity_lastval[account];
-        uint my_points = _my_acts.total_points;
-        for (uint i = _rank.length; i > 0; --i) {
-            if (_rank[i-1].point < my_points) {
-                if (i < _rank.length) {
-                    _rank[i] = _rank[i-1];
-                    if (i == 1) {
-                        _rank[i-1] = RankVals(account, my_points);
-                        break;
-                    }
+        RankVals memory _val = RankVals(account, _my_acts.timestamp, _my_acts.total_points);
+        RankVals memory _temp_val;
+        if (_rank[_rank.length-1].point < _val.point) { // only run my point can be in rank
+            for (uint i = 0; i < _rank.length; ++i) {
+                if (_rank[i].account == _val.account) {
+                    _rank[i] = _val;
+                    break;
                 }
-            }
-            else if (i < _rank.length) {
-                _rank[i] = RankVals(account, my_points);
-                break;
+                else if (_rank[i].point < _val.point || (_rank[i].point == _val.point && _rank[i].timestamp > _val.timestamp)) {
+                    _temp_val = _rank[i];
+                    _rank[i] = _val;
+                    _val = _temp_val;
+                    if (_val.account == account) break;
+                }
             }
         }
     }
