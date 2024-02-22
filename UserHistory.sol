@@ -52,7 +52,8 @@ contract UserHistory is IUserHistory, Ownable {
 
     mapping(address => ActVals[]) private activity_history;
     mapping(address => ActVals)   private activity_lastval;
-    RankVals[200] private _rank;
+    RankVals[] private _rank;
+    mapping(address => uint)      private _my_rank;
 
     constructor() Ownable(msg.sender)  {
         _deposit_rate = 100;
@@ -85,26 +86,42 @@ contract UserHistory is IUserHistory, Ownable {
 
     function _calcRank(address account) private {
         ActVals memory _my_acts = activity_lastval[account];
-        RankVals memory _val = RankVals(account, _my_acts.timestamp, _my_acts.total_points);
         RankVals memory _temp_val;
-        if (_rank[_rank.length-1].point < _val.point) { // only run my point can be in rank
-            for (uint i = 0; i < _rank.length; ++i) {
-                if (_rank[i].account == _val.account) {
-                    _rank[i] = _val;
-                    break;
-                }
-                else if (_rank[i].point < _val.point || (_rank[i].point == _val.point && _rank[i].timestamp > _val.timestamp)) {
-                    _temp_val = _rank[i];
-                    _rank[i] = _val;
-                    _val = _temp_val;
-                    if (_val.account == account) break;
-                }
+        uint last_rank = _my_rank[account]; // if I have ranking, start from my rank.
+        if (last_rank == 0) {// if not, start last rank
+            if (_rank.length < 200) {
+                _my_rank[account] = _rank.length+1;
+                _rank.push(RankVals(account, _my_acts.timestamp, _my_acts.total_points));
+            }
+            last_rank = _rank.length;
+        }
+        else {
+            _rank[last_rank-1] = RankVals(account, _my_acts.timestamp, _my_acts.total_points);
+        }
+
+        for (uint i = last_rank - 1; i > 0; --i) {
+            if (_rank[i-1].point < _rank[i].point) {
+                _temp_val = _rank[i];
+                _rank[i] = _rank[i-1];
+                _rank[i-1] = _temp_val;
+                _my_rank[_rank[i-1].account] = i;
+                _my_rank[_rank[i].account] = i+1;
+            } else {
+                break;
             }
         }
     }
 
-    function getRank() public view returns (RankVals[200] memory) {
+    function getRank() public view returns (RankVals[] memory) {
         return _rank;
+    }
+
+    function getMyRank(address account) public view returns (uint) {
+        return _my_rank[account];
+    }
+
+    function getMyRank() public view returns (uint) {
+        return _my_rank[msg.sender];
     }
 
     function getLastHistory(address account) public view returns (ActVals memory) {
