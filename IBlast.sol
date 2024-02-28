@@ -10,7 +10,7 @@ enum YieldMode {
 enum GasMode {
     VOID,
     CLAIMABLE 
-}
+}ss
 
 interface IBlast{
     // configure
