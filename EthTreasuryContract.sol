@@ -145,7 +145,7 @@ contract EthTreasuryContract is Ownable{
     // Function to withdraw deposited ETH and ERC-20 tokens
     function withdraw(uint256 tokenAmount) external {
         require(tokenAmount > 0, "Token amount must be greater than 0");
-        require(_token.balanceOf(msg.sender) > tokenAmount, "Not enough TOR balance.");
+        require(_token.balanceOf(msg.sender) >= tokenAmount, "Not enough TOR balance.");
         require(_token.allowance(msg.sender, address(this)) >= tokenAmount, "Insufficient allowance");
 
 
