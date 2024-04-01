@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract TORTokenContract is Ownable  {
+import "./IOwnerGroupContract.sol";
+
+contract TORTokenContract {
 
     //TOR token balances
     mapping(address account => uint256) private _balances;
@@ -13,22 +14,34 @@ contract TORTokenContract is Ownable  {
     uint8 private _decimal=18;
     string public _name;
     string public _symbol;
-    address private _owner;
+    IOwnerGroupContract private _ownerGroupContract;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
 
-    constructor(string memory name, string memory symbol) Ownable(msg.sender) {
-        _owner = msg.sender;
-        _name = name;
-        _symbol = symbol;
+    constructor(address ownerGroupContractAddress) {
+        _name = "TOR Token";
+        _symbol = "TOR";
         _totalSupply = 1_000_000_000 * (10**_decimal);
-        _mint(_owner, _totalSupply);
+        _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
     }
 
-    function _mint(address to, uint256 amount) internal onlyOwner {
+    modifier onlyOwner (){
+        require(_ownerGroupContract.isOwner(msg.sender), "Only Owner have a permission.");
+        _;
+    }
+
+    function mint(address to, uint256 amount) public onlyOwner {
         _balances[to] += amount;
+    }
+
+    function burn(address account, uint256 value) public onlyOwner{
+        require(account != address(0), "burn from the zero address");
+
+        _balances[account] = _balances[account] - value;
+        _totalSupply = _totalSupply - value;
+        emit Transfer(account, address(0), value);
     }
 
     function totalSupply() external view returns (uint256) {
