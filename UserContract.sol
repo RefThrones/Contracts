@@ -3,13 +3,15 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./IUserHistory.sol";
 import "./InvitationCodeGenerator.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "./IOwnerGroupContract.sol";
 
-contract UserContract is Ownable, InvitationCodeGenerator{
+
+contract UserContract is InvitationCodeGenerator{
 
     address private _owner;
     uint256 private _invitationSize=0;
     IUserHistory private _historyToken;
+    IOwnerGroupContract private _ownerGroupContract;
 
     struct User {
         string nickName;
@@ -26,20 +28,26 @@ contract UserContract is Ownable, InvitationCodeGenerator{
 
     mapping(address => address[]) private _invitees;
 
+
     event BlacklistUpdated(address indexed _address, bool _isBlacklisted);
     event UserCreated(address indexed _address, string nickName, string xUrl, string uTubeUrl, string telegramUrl, string discordUrl);
     event GenerateInvitaionCode(address indexed _address, string code);
     event AddInvitee(address indexed inviter, address indexed invitee, string code);
 
+    modifier onlyOwner (){
+        require(_ownerGroupContract.isOwner(msg.sender), "Only Owner have a permission.");
+        _;
+    }
 
     modifier notBlacklisted() {
         require(!blacklist[msg.sender], "You are blacklisted");
         _;
     }
 
-    constructor(address historyToken) Ownable(msg.sender) {
+    constructor(address historyToken, address ownerGroupContractAddress) {
         _owner = msg.sender;
         _historyToken = IUserHistory(historyToken);
+        _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
     }
 
     function updateUserHistoryContractAddress(address historyToken) external onlyOwner returns (bool){
