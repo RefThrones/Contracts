@@ -4,9 +4,9 @@ pragma solidity ^0.8.20;
 import "./IBlast.sol";
 import "./IERC20.sol";
 import "./IUserHistory.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "./IOwnerGroupContract.sol";
 
-contract EthTreasuryContract is Ownable{
+contract EthTreasuryContract{
 
     //TOR token balances
     mapping(address account => uint256) private _balances;
@@ -25,18 +25,39 @@ contract EthTreasuryContract is Ownable{
     address private _owner;
     IERC20 private _token;
     IUserHistory private _historyToken;
+    IOwnerGroupContract private _ownerGroupContract;
+
+    mapping(uint => WithdrawContractEthTransaction) private withdrawContractEthTransactions;
+    mapping(uint => mapping(address =>bool)) isConfirmedWithdrawContractEthTransactions;
+
+    uint private transactionCount = 0;
+    struct WithdrawContractEthTransaction {
+        address toAddress;
+        uint amount;
+        bool executed;
+        uint confirmationCount;
+    }
+
+    event SubmitEthWithdrawTransaction(address indexed toAddress, uint amount);
+    event ConfirmTransaction(address indexed owner, uint transactionIndex);
+    event ExecuteTransaction(address indexed owner, uint transactionIndex);
+    event RevokeConfirmation(address indexed owner, uint transactionIndex);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
-    // Event emitted when a swap occurs
     event Swap(address indexed sender, uint256 amountIn, uint256 amountOut);
     event Withdrawal(address indexed sender, uint256 amountOut);
 
+    modifier onlyOwner (){
+        require(_ownerGroupContract.isOwner(msg.sender), "Only Owner have a permission.");
+        _;
+    }
 
-    constructor(address token, address historyToken) Ownable(msg.sender) {
+    constructor(address torTokenContractAddress, address ownerGroupContractAddress, address historyTokenContractAddress) {
         _owner = msg.sender;
-        _token = IERC20(token);
-        _historyToken = IUserHistory(historyToken);
+        _token = IERC20(torTokenContractAddress);
+        _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
+        _historyToken = IUserHistory(historyTokenContractAddress);
         _exchangeRate = 5000;
         _depositFeeRate = 1;
         _withdrawFeeRate = 2;
@@ -77,6 +98,57 @@ contract EthTreasuryContract is Ownable{
         return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
     }
 
+
+    function submitEthWithdrawTransaction(address toAddress, uint amount) onlyOwner public returns (uint)
+    {
+        require(toAddress != address(0), "Invalid withdrawal Address");
+        require(address(this).balance - _totalEthBalance <= amount, "Not enough ETH Balance");
+
+        withdrawContractEthTransactions[transactionCount] = WithdrawContractEthTransaction({
+            toAddress: toAddress,
+            amount: amount,
+            executed: false,
+            confirmationCount: 0
+        });
+
+        emit SubmitEthWithdrawTransaction(toAddress, amount);
+
+        return transactionCount++;
+    }
+
+    function confirmTransaction(uint transactionIndex) onlyOwner public
+    {
+        require(!withdrawContractEthTransactions[transactionIndex].executed, "Transaction already executed");
+        require(!isConfirmedWithdrawContractEthTransactions[transactionIndex][msg.sender], "Transaction already confirmed");
+
+        withdrawContractEthTransactions[transactionIndex].confirmationCount++;
+        isConfirmedWithdrawContractEthTransactions[transactionIndex][msg.sender] = true;
+
+        emit ConfirmTransaction(msg.sender, transactionIndex);
+
+        uint ownerConfirm = _ownerGroupContract.getOwnerCount() / 2;
+        if(withdrawContractEthTransactions[transactionIndex].confirmationCount > ownerConfirm){
+            executeTransaction(transactionIndex);
+        }
+    }
+
+    function executeTransaction(uint transactionIndex) private {
+
+        withdrawContractEthTransactions[transactionIndex].executed = true;
+        _withdrawContractEth(withdrawContractEthTransactions[transactionIndex].toAddress, withdrawContractEthTransactions[transactionIndex].amount);
+
+        emit ExecuteTransaction(withdrawContractEthTransactions[transactionIndex].toAddress, transactionIndex);
+    }
+
+    function revokeConfirmation(uint transactionIndex) onlyOwner public {
+        require(!withdrawContractEthTransactions[transactionIndex].executed, "Transaction already executed");
+        require(isConfirmedWithdrawContractEthTransactions[transactionIndex][msg.sender], "Transaction not confirmed");
+
+        withdrawContractEthTransactions[transactionIndex].confirmationCount--;
+        isConfirmedWithdrawContractEthTransactions[transactionIndex][msg.sender] = false;
+        emit RevokeConfirmation(msg.sender, transactionIndex);
+    }
+
     function getContractEthBalance() external view returns (uint256){
         return address(this).balance;
     }
@@ -106,11 +178,9 @@ contract EthTreasuryContract is Ownable{
         return address(this).balance - _totalEthBalance;
     }
 
-    function withdrawContractEth(uint256 amount) external onlyOwner {
-        require(address(this).balance - _totalEthBalance <= amount, "Not enough ETH Balance");
-        payable(_owner).transfer(amount);
-
-        emit Transfer(address(this), _owner, amount);
+    function _withdrawContractEth(address toAddress, uint256 amount) private {
+        payable(toAddress).transfer(amount);
+        emit Transfer(address(this), toAddress, amount);
     }
 
     // Fallback function to receive Ether
@@ -145,7 +215,7 @@ contract EthTreasuryContract is Ownable{
     // Function to withdraw deposited ETH and ERC-20 tokens
     function withdraw(uint256 tokenAmount) external {
         require(tokenAmount > 0, "Token amount must be greater than 0");
-        require(_token.balanceOf(msg.sender) >= tokenAmount, "Not enough TOR balance.");
+        require(_token.balanceOf(msg.sender) > tokenAmount, "Not enough TOR balance.");
         require(_token.allowance(msg.sender, address(this)) >= tokenAmount, "Insufficient allowance");
 
 

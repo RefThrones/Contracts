@@ -80,9 +80,9 @@ contract OwnerGroupContract{
         emit UnRegisterAdmin(adminAddress);
     }
 
-    function isOwner(address owenerAddress) external view returns (bool)
+    function isOwner(address ownerAddress) external view returns (bool)
     {
-        return owners[owenerAddress];
+        return owners[ownerAddress];
     }
 
     function submitTransaction(address newOwner, bool registerFlag) onlyOwner public returns (uint)
@@ -119,7 +119,7 @@ contract OwnerGroupContract{
         transactions[transactionIndex].confirmationCount++;
         isConfirmed[transactionIndex][msg.sender] = true;
 
-        emit ConfirmOwner(msg.sender, transactionCount);
+        emit ConfirmOwner(msg.sender, transactionIndex);
 
         uint ownerConfirm = ownerCount / 2;
         if(transactions[transactionIndex].confirmationCount > ownerConfirm){
