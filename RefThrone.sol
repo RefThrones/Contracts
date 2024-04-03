@@ -5,8 +5,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IBlast.sol";
 import "./IUserHistory.sol";
+import "./IOwnerGroupContract.sol";
 
-contract RefThrone is Ownable {
+contract RefThrone {
     event ThroneStatus(uint256 throneId, Status status);
 
     enum Status {
@@ -33,6 +34,7 @@ contract RefThrone is Ownable {
     IBlast private _blast;
     IERC20 private _torToken;
     IUserHistory private _userHistory;
+    IOwnerGroupContract private _ownerGroupContract;
 
     address private _blastContractAddress;
     address private _torTokenContractAddress;
@@ -52,13 +54,20 @@ contract RefThrone is Ownable {
     // uint256 private _depositeFeeRate = 1;
     // uint256 private _withdrawFeeRate = 2;
 
+    modifier onlyOwner (){
+        require(_ownerGroupContract.isOwner(msg.sender), "Only Owner have a permission.");
+        _;
+    }
+
     constructor(
         address torTokenContractAddress,
-        address userHistoryContractAddress
-    ) Ownable(msg.sender) {
+        address userHistoryContractAddress,
+        address ownerGroupContractAddress
+    ) {
         setBlastContractAddress(0x4300000000000000000000000000000000000002);
         setTorTokenContractAddress(torTokenContractAddress);
         setUserHistoryContractAddress(userHistoryContractAddress);
+        _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
 
         _addServiceType("CEX");
         _addServiceType("DEX");
