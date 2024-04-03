@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "./IOwnerGroupContract.sol";
 
 import "./IUserHistory.sol";
 
-contract UserHistory is IUserHistory, Ownable {
+contract UserHistory is IUserHistory {
     uint8 private constant _decimal = 18;
     uint private constant _seconds_per_day = 24*60*60;
     uint private constant _history_per_page = 100;
+    IOwnerGroupContract private _ownerGroupContract;
 
     mapping(address whitelist => bool) private whitelist_mapping;
     address[] private whitelist_list;
@@ -54,8 +55,23 @@ contract UserHistory is IUserHistory, Ownable {
     mapping(address => ActVals)   private activity_lastval;
     RankVals[] private _rank;
     mapping(address => uint)      private _my_rank;
+    address[] private user_list;
+    uint256 private board_total_users;
+    uint256 private board_total_points;
 
-    constructor() Ownable(msg.sender)  {
+    modifier onlyOwner (){
+        require(_ownerGroupContract.isOwner(msg.sender), "Only Owner have a permission.");
+        _;
+    }
+
+    modifier onlyTrustedContract(){
+        // tx.origin != msg.sender
+        // require(whitelist_mapping[msg.sender], "You are not the RefThrone Contract.");
+        _;
+    }
+
+    constructor(address ownerGroupContractAddress) {
+        _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
         _deposit_rate = 100;
         _withdraw_rate = 20;
         _inviter_rate = 250;
@@ -64,12 +80,8 @@ contract UserHistory is IUserHistory, Ownable {
         _daily_rate = 20;
         _throne_rate = 100;
         _usurp_rate = 200;
-    }
-
-    modifier onlyTorContract(){
-        // tx.origin != msg.sender
-        // require(whitelist_mapping[msg.sender], "You are not the RefThrone Contract.");
-        _;
+        board_total_users = 0;
+        board_total_points = 0;
     }
 
     function _getLastAct(address account, uint timestamp) private view returns (ActVals memory) {
@@ -94,6 +106,8 @@ contract UserHistory is IUserHistory, Ownable {
                 _rank.push(RankVals(account, _my_acts.timestamp, _my_acts.total_points));
             }
             last_rank = _rank.length;
+            user_list.push(account);
+            board_total_users = board_total_users + 1;
         }
         else {
             _rank[last_rank-1] = RankVals(account, _my_acts.timestamp, _my_acts.total_points);
@@ -128,12 +142,12 @@ contract UserHistory is IUserHistory, Ownable {
         return activity_lastval[account];
     }
 
-    function getRewardRates() public view onlyOwner returns (uint16[8] memory) {
+    function _getRewardRates() public view onlyOwner returns (uint16[8] memory) {
         return [_deposit_rate, _withdraw_rate, _inviter_rate, _invitee_rate, _gen_code_rate, _daily_rate, _throne_rate, _usurp_rate];
         // return reward_rates;
     }
 
-    function setRewardRate(ActType act_type, uint16 rate_value) public onlyOwner {
+    function _setRewardRate(ActType act_type, uint16 rate_value) public onlyOwner {
         if (act_type == ActType.DEPOSIT)        _deposit_rate = rate_value;
         else if (act_type == ActType.WITHDRAW)  _withdraw_rate = rate_value;
         else if (act_type == ActType.INVITER)   _inviter_rate = rate_value;
@@ -146,13 +160,13 @@ contract UserHistory is IUserHistory, Ownable {
         // reward_rates[act_type] = rate_value;
     }
 
-    function setWhiteListContract(address ref_contract) public onlyOwner {
-        whitelist_mapping[ref_contract] = true;
-        whitelist_list.push(ref_contract);
+    function _getWhiteListContract() public view onlyOwner returns(address[] memory) {
+        return whitelist_list;
     }
 
-    function getWhiteListContract() public view onlyOwner returns(address[] memory) {
-        return whitelist_list;
+    function _setWhiteListContract(address ref_contract) public onlyOwner {
+        whitelist_mapping[ref_contract] = true;
+        whitelist_list.push(ref_contract);
     }
 
     function checkDuplicateCheckIn(address account) public view returns (bool) {
@@ -182,6 +196,7 @@ contract UserHistory is IUserHistory, Ownable {
         uint activity_points = _daily_rate * (10 ** _decimal);
         uint deposit_points = _holdTorPoint(_timestamp, _last_act.timestamp, _last_act.tor_balance);
         uint total_points = _last_act.total_points + activity_points + deposit_points;
+        board_total_points = board_total_points + activity_points + deposit_points;
 
         ActVals memory _act = ActVals(
             block.timestamp, 
@@ -229,7 +244,7 @@ contract UserHistory is IUserHistory, Ownable {
 
         uint deposit_points = _holdTorPoint(timestamp, _last_act.timestamp, _last_act.tor_balance);
         uint total_points = _last_act.total_points + activity_points + deposit_points;
-
+        board_total_points = board_total_points + activity_points + deposit_points;
         ActVals memory _act = ActVals(
             timestamp, 
             act_type, 
@@ -244,31 +259,31 @@ contract UserHistory is IUserHistory, Ownable {
         _calcRank(account);
     }
 
-    function setDepositActivity(address account, uint timestamp, uint256 tor_changes, uint256 tor_balance) external onlyTorContract {
+    function setDepositActivity(address account, uint timestamp, uint256 tor_changes, uint256 tor_balance) external onlyTrustedContract {
         _AllActivity(account, timestamp, ActType.DEPOSIT, tor_changes, tor_balance);
     }
 
-    function setWithdrawActivity(address account, uint timestamp, uint256 tor_changes, uint256 tor_balance) external onlyTorContract {
+    function setWithdrawActivity(address account, uint timestamp, uint256 tor_changes, uint256 tor_balance) external onlyTrustedContract {
         _AllActivity(account, timestamp, ActType.WITHDRAW, tor_changes, tor_balance);
     }
 
-    function setInviterActivity(address account, uint timestamp) external onlyTorContract {
+    function setInviterActivity(address account, uint timestamp) external onlyTrustedContract {
         _AllActivity(account, timestamp, ActType.INVITER, 0, 0);
     }
 
-    function setInviteeActivity(address account, uint timestamp) external onlyTorContract {
+    function setInviteeActivity(address account, uint timestamp) external onlyTrustedContract {
         _AllActivity(account, timestamp, ActType.INVITEE, 0, 0);
     }
 
-    function setGenCodeActivity(address account, uint timestamp) external onlyTorContract {
+    function setGenCodeActivity(address account, uint timestamp) external onlyTrustedContract {
         _AllActivity(account, timestamp, ActType.GEN_CODE, 0, 0);
     }
 
-    function setThroneActivity(address account, uint timestamp) external onlyTorContract {
+    function setThroneActivity(address account, uint timestamp) external onlyTrustedContract {
         _AllActivity(account, timestamp, ActType.THRONE, 0, 0);
     }
 
-    function setUsurpActivity(address account, uint timestamp) external onlyTorContract {
+    function setUsurpActivity(address account, uint timestamp) external onlyTrustedContract {
         _AllActivity(account, timestamp, ActType.USURP, 0, 0);
     }
 
@@ -276,7 +291,7 @@ contract UserHistory is IUserHistory, Ownable {
         return activity_history[account].length;
     }
 
-    function getHistory(address account, uint page, uint count_per_page) public view returns (ActVals[] memory){
+    function getHistory(address account, uint page, uint count_per_page) public view returns (ActVals[] memory) {
         ActVals[] memory _arr_my_acts = activity_history[account];
         uint activity_len = _arr_my_acts.length;
         require (activity_len > 0, "NO_DATA");
@@ -297,13 +312,29 @@ contract UserHistory is IUserHistory, Ownable {
         return _inpage_acts;
     }
 
-    function getHistory(address account, uint page) public view returns (ActVals[] memory){
+    function getHistory(address account, uint page) public view returns (ActVals[] memory) {
         return getHistory(account, page, 100);
     }
 
-    function getHistory(address account) public view returns (ActVals[] memory){
+    function getHistory(address account) public view returns (ActVals[] memory) {
         return getHistory(account, 1, 100);
     }
+
+    function getTotalUsers() public view returns (uint) {
+        return board_total_users;
+    }
+
+    function getTotalPoints() public view returns (uint) {
+        return board_total_points;
+    }
+
+    function _getAllUsers() public view onlyOwner returns (ActVals[] memory) {
+        ActVals[] memory _inpage_acts = new ActVals[](board_total_users);
+        for (uint i = 0; i < board_total_users; ++i)
+            _inpage_acts[i] = activity_lastval[user_list[i]];
+        return _inpage_acts;
+    }
+
 }
 
 
