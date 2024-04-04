@@ -21,7 +21,7 @@ contract OwnerGroupContract{
     event UnRegisterAdmin(address indexed admin);
     event ConfirmOwner(address indexed owner, uint indexed txIndex);
     event RevokeOwner(address indexed owner, uint indexed txIndex);
-    event ExecutOwnerTransaction(address indexed owner, uint indexed txIndex);
+    event ExecuteOwnerTransaction(address indexed owner, uint indexed txIndex);
     event RevokeOwnerConfirmation(address indexed owner, uint indexed txIndex);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -119,9 +119,9 @@ contract OwnerGroupContract{
         emit UnRegisterAdmin(adminAddress);
     }
 
-    function isOwner(address owenerAddress) external view returns (bool)
+    function isOwner(address ownerAddress) external view returns (bool)
     {
-        return owners[owenerAddress];
+        return owners[ownerAddress];
     }
 
     function submitOwnerTransaction(address newOwner, bool registerFlag) onlyOwner public returns (uint)
@@ -178,7 +178,7 @@ contract OwnerGroupContract{
             ownerCount--;
         }
 
-        emit ExecutOwnerTransaction(ownerTransactions[transactionIndex].owner, transactionIndex);
+        emit ExecuteOwnerTransaction(ownerTransactions[transactionIndex].owner, transactionIndex);
     }
 
     function revokeOwnerConfirmation(uint transactionIndex) onlyOwner public {
