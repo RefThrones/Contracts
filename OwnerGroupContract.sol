@@ -21,8 +21,8 @@ contract OwnerGroupContract{
     event UnRegisterAdmin(address indexed admin);
     event ConfirmOwner(address indexed owner, uint indexed txIndex);
     event RevokeOwner(address indexed owner, uint indexed txIndex);
-    event ExecuteTransaction(address indexed owner, uint indexed txIndex);
-    event RevokeConfirmation(address indexed owner, uint indexed txIndex);
+    event ExecutOwnerTransaction(address indexed owner, uint indexed txIndex);
+    event RevokeOwnerConfirmation(address indexed owner, uint indexed txIndex);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event RegisterTrustedContract(address indexed contractAddress);
@@ -34,14 +34,14 @@ contract OwnerGroupContract{
     event RevokeEthWithdrawTransaction(address indexed owner, uint transactionIndex);
 
     uint private transactionCount = 0;
-    struct Transaction {
+    struct OwnerTransaction {
         address owner;
         bool registerFlag;
         bool executed;
         uint confirmationCount;
     }
 
-    mapping(uint => Transaction) private transactions;
+    mapping(uint => OwnerTransaction) private ownerTransactions;
     mapping(uint => mapping(address =>bool)) isConfirmed;
 
     mapping(uint => WithdrawContractEthTransaction) private withdrawContractEthTransactions;
@@ -124,7 +124,7 @@ contract OwnerGroupContract{
         return owners[owenerAddress];
     }
 
-    function submitTransaction(address newOwner, bool registerFlag) onlyOwner public returns (uint)
+    function submitOwnerTransaction(address newOwner, bool registerFlag) onlyOwner public returns (uint)
     {
         require(newOwner != address(0), "Invalid owner");
 
@@ -132,7 +132,7 @@ contract OwnerGroupContract{
             require(owners[newOwner], "Not Owner");
         }
 
-        transactions[transactionCount] = Transaction({
+        ownerTransactions[transactionCount] = OwnerTransaction({
             owner: newOwner,
             registerFlag: registerFlag,
             executed: false,
@@ -150,50 +150,106 @@ contract OwnerGroupContract{
         return transactionCount++;
     }
 
-    function confirmTransaction(uint transactionIndex) onlyOwner public
+    function confirmOwnerTransaction(uint transactionIndex) onlyOwner public
     {
-        require(!transactions[transactionIndex].executed, "Transaction already executed");
+        require(!ownerTransactions[transactionIndex].executed, "Transaction already executed");
         require(!isConfirmed[transactionIndex][msg.sender], "Transaction already confirmed");
 
-        transactions[transactionIndex].confirmationCount++;
+        ownerTransactions[transactionIndex].confirmationCount++;
         isConfirmed[transactionIndex][msg.sender] = true;
 
         emit ConfirmOwner(msg.sender, transactionIndex);
 
         uint ownerConfirm = ownerCount / 2;
-        if(transactions[transactionIndex].confirmationCount > ownerConfirm){
-            executeTransaction(transactionIndex);
+        if(ownerTransactions[transactionIndex].confirmationCount > ownerConfirm){
+            executeOwnerTransaction(transactionIndex);
         }
     }
 
-    function executeTransaction(uint transactionIndex) private {
+    function executeOwnerTransaction(uint transactionIndex) private {
 
-        transactions[transactionIndex].executed = true;
-        if(transactions[transactionIndex].registerFlag){
-            owners[transactions[transactionIndex].owner] = true;
+        ownerTransactions[transactionIndex].executed = true;
+        if(ownerTransactions[transactionIndex].registerFlag){
+            owners[ownerTransactions[transactionIndex].owner] = true;
             ownerCount++;
         }
         else {
-            owners[transactions[transactionIndex].owner] = false;
+            owners[ownerTransactions[transactionIndex].owner] = false;
             ownerCount--;
         }
 
-        emit ExecuteTransaction(transactions[transactionIndex].owner, transactionIndex);
+        emit ExecutOwnerTransaction(ownerTransactions[transactionIndex].owner, transactionIndex);
     }
 
-    function revokeConfirmation(uint transactionIndex) onlyOwner public {
-        require(!transactions[transactionIndex].executed, "Transaction already executed");
+    function revokeOwnerConfirmation(uint transactionIndex) onlyOwner public {
+        require(!ownerTransactions[transactionIndex].executed, "Transaction already executed");
         require(isConfirmed[transactionIndex][msg.sender], "Transaction not confirmed");
 
-        transactions[transactionIndex].confirmationCount--;
+        ownerTransactions[transactionIndex].confirmationCount--;
         isConfirmed[transactionIndex][msg.sender] = false;
-        emit RevokeConfirmation(msg.sender, transactionIndex);
+        emit RevokeOwnerConfirmation(msg.sender, transactionIndex);
+    }
+
+    function getPendingOwnerTransactions() public view onlyOwner returns (uint[] memory){
+
+        // Determine the count of pending transactions
+        uint pendingCount = 0;
+        for (uint i = 0; i < transactionCount; i++) {
+            if (!ownerTransactions[i].executed) {
+                pendingCount++;
+            }
+        }
+
+        // Create a dynamic array to store pending transaction indices
+        uint[] memory pendingTransactions = new uint[](pendingCount);
+        uint index = 0;
+        for (uint i = 0; i < transactionCount; i++) {
+            if (!ownerTransactions[i].executed) {
+                pendingTransactions[index] = i;
+                index++;
+            }
+        }
+        return pendingTransactions;
+    }
+
+    function geOwnerTransaction(uint index) public view onlyOwner returns (address, bool, bool, uint) {
+        require(index < transactionCount, "Index out of bounds");
+        OwnerTransaction storage transaction = ownerTransactions[index];
+        return (transaction.owner, transaction.registerFlag, transaction.executed, transaction.confirmationCount);
+    }
+
+    function getPendingWithdrawEthTransactions() public view onlyOwner returns (uint[] memory){
+
+        // Determine the count of pending transactions
+        uint pendingCount = 0;
+        for (uint i = 0; i < withdrawContractEthTransactionCount; i++) {
+            if (!withdrawContractEthTransactions[i].executed) {
+                pendingCount++;
+            }
+        }
+
+        // Create a dynamic array to store pending transaction indices
+        uint[] memory pendingTransactions = new uint[](pendingCount);
+        uint index = 0;
+        for (uint i = 0; i < withdrawContractEthTransactionCount; i++) {
+            if (!withdrawContractEthTransactions[i].executed) {
+                pendingTransactions[index] = i;
+                index++;
+            }
+        }
+        return pendingTransactions;
+    }
+
+    function getWithdrawContractEthTransaction(uint index) public view onlyOwner returns (address, uint, bool, uint) {
+        require(index < withdrawContractEthTransactionCount, "Index out of bounds");
+        WithdrawContractEthTransaction storage transaction = withdrawContractEthTransactions[index];
+        return (transaction.toAddress, transaction.amount, transaction.executed, transaction.confirmationCount);
     }
 
     function submitEthWithdrawTransaction(address toAddress, uint amount) onlyOwner public returns (uint)
     {
         require(toAddress != address(0), "Invalid withdrawal Address");
-
+        require(address(this).balance <= amount, "Not enough ETH Balance");
 
         withdrawContractEthTransactions[withdrawContractEthTransactionCount] = WithdrawContractEthTransaction({
             toAddress: toAddress,
