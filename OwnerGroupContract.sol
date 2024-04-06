@@ -135,7 +135,7 @@ contract OwnerGroupContract{
 
     function registerAdmin(address newAdminAddress) public onlyOwner
     {
-        require(!admins[newAdminAddress], "Already registered as admin");
+        require(!admins[newAdminAddress], "Already registered");
         admins[newAdminAddress] = true;
         adminCount++;
         emit RegisterAdmin(newAdminAddress);
@@ -182,8 +182,8 @@ contract OwnerGroupContract{
 
     function confirmOwnerTransaction(uint transactionIndex) onlyOwner public
     {
-        require(!ownerTransactions[transactionIndex].executed, "Transaction already executed");
-        require(!isConfirmed[transactionIndex][msg.sender], "Transaction already confirmed");
+        require(!ownerTransactions[transactionIndex].executed, "tx already executed");
+        require(!isConfirmed[transactionIndex][msg.sender], "tx already confirmed");
 
         ownerTransactions[transactionIndex].confirmationCount++;
         isConfirmed[transactionIndex][msg.sender] = true;
@@ -212,8 +212,8 @@ contract OwnerGroupContract{
     }
 
     function revokeOwnerConfirmation(uint transactionIndex) onlyOwner public {
-        require(!ownerTransactions[transactionIndex].executed, "Transaction already executed");
-        require(isConfirmed[transactionIndex][msg.sender], "Transaction not confirmed");
+        require(!ownerTransactions[transactionIndex].executed, "tx already executed");
+        require(isConfirmed[transactionIndex][msg.sender], "tx not confirmed");
 
         ownerTransactions[transactionIndex].confirmationCount--;
         isConfirmed[transactionIndex][msg.sender] = false;
@@ -279,7 +279,7 @@ contract OwnerGroupContract{
     function submitEthWithdrawTransaction(address toAddress, uint amount) onlyOwner public returns (uint)
     {
         require(toAddress != address(0), "Invalid withdrawal Address");
-        require(address(this).balance <= amount, "Not enough ETH Balance");
+        require(amount > address(this).balance, "Not enough ETH Balance");
 
         withdrawContractEthTransactions[withdrawContractEthTransactionCount] = WithdrawContractEthTransaction({
             toAddress: toAddress,
@@ -295,8 +295,8 @@ contract OwnerGroupContract{
 
     function confirmEthWithdrawTransaction(uint transactionIndex) onlyOwner public
     {
-        require(!withdrawContractEthTransactions[transactionIndex].executed, "Transaction already executed");
-        require(!isConfirmWithdrawContractEthTransactions[transactionIndex][msg.sender], "Transaction already confirmed");
+        require(!withdrawContractEthTransactions[transactionIndex].executed, "tx already executed");
+        require(!isConfirmWithdrawContractEthTransactions[transactionIndex][msg.sender], "tx already confirmed");
 
         withdrawContractEthTransactions[transactionIndex].confirmationCount++;
         isConfirmWithdrawContractEthTransactions[transactionIndex][msg.sender] = true;
@@ -318,15 +318,15 @@ contract OwnerGroupContract{
     }
 
     function _withdrawContractEth(address toAddress, uint256 amount) private {
-        require(address(this).balance >= amount, "Not enough ETH Balance");
+        require(address(this).balance >= amount, "Not enough Balance");
 
         payable(toAddress).transfer(amount);
         emit Transfer(address(this), toAddress, amount);
     }
 
     function revokeEthWithdrawTransaction(uint transactionIndex) onlyOwner public {
-        require(!withdrawContractEthTransactions[transactionIndex].executed, "Transaction already executed");
-        require(isConfirmWithdrawContractEthTransactions[transactionIndex][msg.sender], "Transaction not confirmed");
+        require(!withdrawContractEthTransactions[transactionIndex].executed, "tx already executed");
+        require(isConfirmWithdrawContractEthTransactions[transactionIndex][msg.sender], "tx not confirmed");
 
         withdrawContractEthTransactions[transactionIndex].confirmationCount--;
         isConfirmWithdrawContractEthTransactions[transactionIndex][msg.sender] = false;
