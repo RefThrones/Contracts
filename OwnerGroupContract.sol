@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
+import "./IBlast.sol";
 
 contract OwnerGroupContract{
 
@@ -65,7 +66,36 @@ contract OwnerGroupContract{
             ownerCount++;
             adminCount++;
         }
+
+        IBlast(0x4300000000000000000000000000000000000002).configureClaimableYield();
+        IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
     }
+
+    function claimYield(uint256 amount, address toAddress) external onlyOwner returns (uint256){
+        //This function is public meaning anyone can claim the yield
+        return IBlast(0x4300000000000000000000000000000000000002).claimYield(address(this), toAddress, amount);
+    }
+
+    function readClaimableYield() external view onlyOwner returns (uint256){
+        //This function is public meaning anyone can claim the yield
+        return IBlast(0x4300000000000000000000000000000000000002).readClaimableYield(address(this));
+    }
+
+    function claimAllYield(address toAddress) external onlyOwner returns (uint256){
+        //This function is public meaning anyone can claim the yield
+        return IBlast(0x4300000000000000000000000000000000000002).claimAllYield(address(this), toAddress);
+    }
+
+    function claimAllGas(address toAddress) external onlyOwner {
+        // This function is public meaning anyone can claim the gas
+        IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), toAddress);
+    }
+
+    function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
+        return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
+    }
+
+
     modifier onlyOwner() {
         require(owners[msg.sender], "not owner");
         _;
