@@ -39,6 +39,7 @@ contract RefThrone {
     address private _blastContractAddress;
     address private _torTokenContractAddress;
     address private _userHistoryContractAddress;
+    address private _ownerGroupContractAddress;
 
     string[] private _serviceTypes;
     string[] private _benefitTypes;
@@ -50,9 +51,6 @@ contract RefThrone {
 
     uint256 private _totalTorDeposited = 0;
     mapping(address => uint256 torAmount) private _torDepositedByAddress;
-
-    // uint256 private _depositeFeeRate = 1;
-    // uint256 private _withdrawFeeRate = 2;
 
     modifier onlyOwner (){
         require(_ownerGroupContract.isOwner(msg.sender), "Only Owner have a permission.");
@@ -67,17 +65,18 @@ contract RefThrone {
         setBlastContractAddress(0x4300000000000000000000000000000000000002);
         setTorTokenContractAddress(torTokenContractAddress);
         setUserHistoryContractAddress(userHistoryContractAddress);
+        _ownerGroupContractAddress = ownerGroupContractAddress;
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
 
-        _addServiceType("CEX");
-        _addServiceType("DEX");
-        _addServiceType("MISC");
+        addServiceType("CEX");
+        addServiceType("DEX");
+        addServiceType("MISC");
 
-        _addBenefitType("Fee Discount");
-        _addBenefitType("USDT");
-        _addBenefitType("USDC");
-        _addBenefitType("BTC");
-        _addBenefitType("ETH");
+        addBenefitType("Fee Discount");
+        addBenefitType("USDT");
+        addBenefitType("USDC");
+        addBenefitType("BTC");
+        addBenefitType("ETH");
     }
 
     function setBlastContractAddress(address blastContractAddress) public onlyOwner {
@@ -110,23 +109,43 @@ contract RefThrone {
 
     function claimAllGas() external onlyOwner {
         // This function is public meaning anyone can claim the gas
-        _blast.claimAllGas(address(this), msg.sender);
+        _blast.claimAllGas(address(this), _ownerGroupContractAddress);
     }
 
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
         return _blast.readGasParams(address(this));
     }
 
-    function addServiceType(string memory serviceType) external onlyOwner {
-        _addServiceType(serviceType);
+    function addServiceType(string memory serviceType) public onlyOwner {
+        _serviceTypes.push(serviceType);
+    }
+
+    function deleteServiceType(string memory serviceType) public onlyOwner {
+        for (uint i = 0; i < _serviceTypes.length; i++) {
+            if (_compareStrings(_serviceTypes[i], serviceType)) {
+                _serviceTypes[i] = _serviceTypes[_serviceTypes.length - 1];
+                _serviceTypes.pop();
+                break;
+            }
+        }
     }
 
     function getServiceTypes() external view returns (string[] memory) {
         return _serviceTypes;
     }
 
-    function addBenefitType(string memory benefitType) external onlyOwner {
-        _addBenefitType(benefitType);
+    function addBenefitType(string memory benefitType) public onlyOwner {
+        _benefitTypes.push(benefitType);
+    }
+
+    function deleteBenefitType(string memory benefitType) public onlyOwner {
+        for (uint i = 0; i < _benefitTypes.length; i++) {
+            if (_compareStrings(_benefitTypes[i], benefitType)) {
+                _benefitTypes[i] = _benefitTypes[_benefitTypes.length - 1];
+                _benefitTypes.pop();
+                break;
+            }
+        }
     }
 
     function getBenefitTypes() external view returns (string[] memory) {
@@ -150,7 +169,7 @@ contract RefThrone {
         uint256 torAmount,
         string memory linkUrl
     ) external returns (uint256 throneId) {
-        require(_torToken.balanceOf(msg.sender) > torAmount, "Not enough TOR balance.");
+        require(_torToken.balanceOf(msg.sender) >= torAmount, "Not enough TOR balance.");
         require(_torToken.allowance(msg.sender, address(this)) >= torAmount, "Insufficient allowance");
         require(!_isThroneInReview(msg.sender, name, benefitType), "Already in review");
 
@@ -199,16 +218,16 @@ contract RefThrone {
         require(
             (challengerBenefitAmount > ownedBenefitAmount) ||
             ((challengerBenefitAmount == ownedBenefitAmount) && (challengerTorAmount > ownedTorAmount)),
-            "Either benefit or TOR amount should be greater than current throne"
+            "Benefit or TOR amount should be greater than current throne"
         );
     }
 
     function withdrawFromThrone(uint256 throneId) external returns (bool success) {
-        require(_thrones[throneId].referrer == msg.sender, "addresses are not match between referrer and the sender");
-        require(_thrones[throneId].id > 0, "Invalid throne id");
+        require(_thrones[throneId].referrer == msg.sender, "addresses are not match");
+        require(_thrones[throneId].id > 0, "Invalid id");
         require(
             _thrones[throneId].status == Status.Owned || _thrones[throneId].status == Status.InReview,
-            "The throne is not in the state of Owned or InReview"
+            "Not in Owned or InReview state"
         );
 
         _withdraw(msg.sender, _thrones[throneId].torAmount);
@@ -219,10 +238,10 @@ contract RefThrone {
     }
 
     function cancelThrone(uint256 throneId) external onlyOwner {
-        require(_thrones[throneId].id > 0, "Invalid throne id");
+        require(_thrones[throneId].id > 0, "Invalid id");
         require(
             _thrones[throneId].status == Status.Owned,
-            "The throne is not in the state of Owned"
+            "Not in Owned state"
         );
 
         _withdraw(msg.sender, _thrones[throneId].torAmount);
@@ -235,7 +254,7 @@ contract RefThrone {
         require(torAmountToWithdraw > 0, "Invalid TOR amount to withdraw");
         require(_totalTorDeposited >= torAmountToWithdraw, "Not enough total TOR amount");
         require(_torDepositedByAddress[address_] >= torAmountToWithdraw, "Not enough TOR deposited");
-        require(_torToken.balanceOf(address(this)) >= torAmountToWithdraw, "Not enough TOR balance.");
+        require(_torToken.balanceOf(address(this)) >= torAmountToWithdraw, "Not enough TOR balance");
 
         _torToken.transfer(address_, torAmountToWithdraw);
         _totalTorDeposited -= torAmountToWithdraw;
@@ -251,7 +270,7 @@ contract RefThrone {
     ) external onlyOwner {
         require(
             _thrones[throneId].status == Status.InReview,
-            "Only the throne in review can be modified"
+            "Not in InReview state"
         );
 
         _thrones[throneId].name = name;
@@ -266,7 +285,7 @@ contract RefThrone {
         require(referrer != address(0), "Invalid referrer address");
         require(
             _thrones[throneId].status == Status.InReview,
-            "The throne is not in the state of InReview"
+            "Not in InReview state"
         );
 
         string memory name = _thrones[throneId].name;
@@ -291,8 +310,8 @@ contract RefThrone {
     }
 
     function rejectThrone(uint256 throneId) external onlyOwner {
-        require(_thrones[throneId].id > 0, "Invalid throne id");
-        require(_thrones[throneId].status == Status.InReview, "The throne is not in the state of InReview");
+        require(_thrones[throneId].id > 0, "Invalid id");
+        require(_thrones[throneId].status == Status.InReview, "Not in InReview state");
 
         _withdraw(_thrones[throneId].referrer, _thrones[throneId].torAmount);
 
@@ -302,8 +321,8 @@ contract RefThrone {
     }
 
     function _lostThrone(uint256 throneId) private onlyOwner {
-        require(_thrones[throneId].id > 0, "Invalid throne id");
-        require(_thrones[throneId].status == Status.Owned, "The throne is not in the state of Owned");
+        require(_thrones[throneId].id > 0, "Invalid id");
+        require(_thrones[throneId].status == Status.Owned, "Not in Owned state");
 
         _withdraw(_thrones[throneId].referrer, _thrones[throneId].torAmount);
 
@@ -358,20 +377,12 @@ contract RefThrone {
     }
 
     function getThroneById(uint256 throneId) external view returns (Throne memory) {
-        require(_thrones[throneId].id > 0, "Invalid throne id");
+        require(_thrones[throneId].id > 0, "Invalid id");
         return _thrones[throneId];
     }
 
     function getOwnedThroneCount() external view returns (uint256) {
         return _getThroneCountInStatus(Status.Owned);
-    }
-
-    function _addServiceType(string memory serviceType) private {
-        _serviceTypes.push(serviceType);
-    }
-
-    function _addBenefitType(string memory benefitType) private {
-        _benefitTypes.push(benefitType);
     }
 
     function _getNewThroneId() private returns (uint256) {
