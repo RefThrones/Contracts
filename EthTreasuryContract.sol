@@ -46,8 +46,8 @@ contract EthTreasuryContract{
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
         _historyToken = IUserHistory(historyTokenContractAddress);
         _exchangeRate = 5000;
-        _depositFeeRate = 1;
-        _withdrawFeeRate = 2;
+        _depositFeeRate = 0;
+        _withdrawFeeRate = 0;
         _ownerGroupContractAddress = ownerGroupContractAddress;
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableYield();
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
@@ -158,21 +158,20 @@ contract EthTreasuryContract{
     // Function to withdraw deposited ETH and ERC-20 tokens
     function withdraw(uint256 tokenAmount) external {
         require(tokenAmount > 0, "Token amount must be greater than 0");
-        require(_token.balanceOf(msg.sender) > tokenAmount, "Not enough TOR balance.");
+        require(_token.balanceOf(msg.sender) >= tokenAmount, "Not enough TOR balance.");
         require(_token.allowance(msg.sender, address(this)) >= tokenAmount, "Insufficient allowance");
 
 
         uint256 ethAmount = tokenAmount / _exchangeRate;
 
         _totalTorBalance -= tokenAmount;
-        // withdrawal amount fee 2%
         ethAmount = (ethAmount * (100 - _withdrawFeeRate)) / 100;
         _totalEthBalance -= ethAmount;
 
         _ethBalances[msg.sender]-=ethAmount;
         _torBalances[msg.sender]-=tokenAmount;
 
-        // Transfer deposited ERC-20 tokens back to the sender
+        // Transfer deposited TOR tokens back to the sender
         _token.transferFrom(msg.sender, address(this), tokenAmount);
 
         // Transfer deposited ETH back to the sender
@@ -180,7 +179,6 @@ contract EthTreasuryContract{
 
         _historyToken.setWithdrawActivity(msg.sender, block.timestamp, tokenAmount, _torBalances[msg.sender]);
 
-        // Emit Withdrawal event
         emit Withdrawal(msg.sender, ethAmount);
     }
 

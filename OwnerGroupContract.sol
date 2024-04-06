@@ -212,7 +212,7 @@ contract OwnerGroupContract{
         return pendingTransactions;
     }
 
-    function geOwnerTransaction(uint index) public view onlyOwner returns (address, bool, bool, uint) {
+    function getOwnerTransaction(uint index) public view onlyOwner returns (address, bool, bool, uint) {
         require(index < transactionCount, "Index out of bounds");
         OwnerTransaction storage transaction = ownerTransactions[index];
         return (transaction.owner, transaction.registerFlag, transaction.executed, transaction.confirmationCount);

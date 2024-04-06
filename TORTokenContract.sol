@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "./IOwnerGroupContract.sol";
+import "./IBlast.sol";
 
 contract TORTokenContract {
 
@@ -10,6 +11,7 @@ contract TORTokenContract {
     mapping(address account => mapping(address spender => uint256)) private _allowances;
     mapping(uint => MintOrBurnTransaction) private mintOrBurnTransaction;
     mapping(uint => mapping(address =>bool)) isConfirmed;
+    address private _ownerGroupContractAddress;
 
     uint private transactionCount = 0;
     struct MintOrBurnTransaction {
@@ -40,6 +42,33 @@ contract TORTokenContract {
         _symbol = "TOR";
         _totalSupply = 1_000_000_000 * torToWei;
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
+        _ownerGroupContractAddress = ownerGroupContractAddress;
+        IBlast(0x4300000000000000000000000000000000000002).configureClaimableYield();
+        IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
+    }
+
+    function claimYield(uint256 amount) external onlyOwner returns (uint256){
+        //This function is public meaning anyone can claim the yield
+        return IBlast(0x4300000000000000000000000000000000000002).claimYield(address(this), _ownerGroupContractAddress, amount);
+    }
+
+    function readClaimableYield() external view onlyOwner returns (uint256){
+        //This function is public meaning anyone can claim the yield
+        return IBlast(0x4300000000000000000000000000000000000002).readClaimableYield(address(this));
+    }
+
+    function claimAllYield() external onlyOwner returns (uint256){
+        //This function is public meaning anyone can claim the yield
+        return IBlast(0x4300000000000000000000000000000000000002).claimAllYield(address(this), _ownerGroupContractAddress);
+    }
+
+    function claimAllGas() external onlyOwner {
+        // This function is public meaning anyone can claim the gas
+        IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), _ownerGroupContractAddress);
+    }
+
+    function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
+        return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
     }
 
     modifier onlyOwner (){
