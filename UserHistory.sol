@@ -93,7 +93,7 @@ contract UserHistory is IUserHistory {
     }
 
     function _holdTorPoint(uint timestamp1, uint timestamp2, uint tor_balance) private pure returns (uint) {
-        return (timestamp1 - timestamp2) * tor_balance / 2000000; // * 0.0000005 // 216 point per tor,hour
+        return (timestamp1 - timestamp2) * tor_balance / 2000000; // * 0.0000005 // 216 point per daily with 5000 tor
     }
 
     function _calcRank(address account) private {
@@ -101,16 +101,22 @@ contract UserHistory is IUserHistory {
         RankVals memory _temp_val;
         uint last_rank = _my_rank[account]; // if I have ranking, start from my rank.
         if (last_rank == 0) {// if not, start last rank
+            _my_rank[account] = _rank.length+1;
+            last_rank = _rank.length+1;
             if (_rank.length < 200) {
-                _my_rank[account] = _rank.length+1;
                 _rank.push(RankVals(account, _my_acts.timestamp, _my_acts.total_points));
             }
-            last_rank = _rank.length;
             user_list.push(account);
             board_total_users = board_total_users + 1;
         }
-        else {
+        if (last_rank <= 200) {
             _rank[last_rank-1] = RankVals(account, _my_acts.timestamp, _my_acts.total_points);
+        } else if (_rank[_rank.length-1].point < _my_acts.total_points) {
+            _my_rank[_rank[_rank.length-1].account] = 201;
+            _rank[_rank.length-1] = RankVals(account, _my_acts.timestamp, _my_acts.total_points);
+            last_rank = 200;
+        } else {
+            last_rank = 0;
         }
 
         for (uint i = last_rank - 1; i > 0; --i) {
@@ -257,6 +263,24 @@ contract UserHistory is IUserHistory {
         activity_history[account].push(_act);
         activity_lastval[account] = _act;
         _calcRank(account);
+    }
+
+    function _initialHistory(address account, uint[] memory account_history) external onlyOwner {
+        for (uint i = (account_history.length/8); i > 0; i--) {
+            ActVals memory _act = ActVals(
+                account_history[i*8-8],//timestamp, 
+                (ActType)(account_history[i*8-7]),//act_type, 
+                account_history[i*8-6],//tor_changes, 
+                account_history[i*8-5],//tor_balance, 
+                account_history[i*8-4],//count_invitee, 
+                account_history[i*8-3],//activity_points, 
+                account_history[i*8-2],//deposit_points, 
+                account_history[i*8-1]); //total_points);
+            board_total_points = board_total_points + _act.activity_points + _act.deposit_points;
+            activity_history[account].push(_act);
+            activity_lastval[account] = _act;
+            _calcRank(account);
+        }
     }
 
     function setDepositActivity(address account, uint timestamp, uint256 tor_changes, uint256 tor_balance) external onlyTrustedContract {
