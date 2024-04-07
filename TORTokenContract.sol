@@ -47,6 +47,11 @@ contract TORTokenContract {
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
     }
 
+    modifier onlyOwner (){
+        require(_ownerGroupContract.isOwner(msg.sender), "Only Owner have a permission.");
+        _;
+    }
+
     function claimYield(uint256 amount) external onlyOwner returns (uint256){
         //This function is public meaning anyone can claim the yield
         return IBlast(0x4300000000000000000000000000000000000002).claimYield(address(this), _ownerGroupContractAddress, amount);
@@ -69,11 +74,6 @@ contract TORTokenContract {
 
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
         return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
-    }
-
-    modifier onlyOwner (){
-        require(_ownerGroupContract.isOwner(msg.sender), "Only Owner have a permission.");
-        _;
     }
 
     function submitMintOrBurnTransaction(address toAddress, uint amount, bool mintOrBurn) onlyOwner public returns (uint)
@@ -137,14 +137,14 @@ contract TORTokenContract {
     }
 
     function _mint(address to, uint256 amount) internal onlyOwner {
-        _balances[to] += amount * torToWei;
+        _balances[to] += amount;
     }
 
     function _burn(address account, uint256 value) internal onlyOwner{
 
-        _balances[account] = _balances[account] - value * torToWei;
-        _totalSupply = _totalSupply - value * torToWei;
-        emit Transfer(account, address(0), value * torToWei);
+        _balances[account] = _balances[account] - value ;
+        _totalSupply = _totalSupply - value;
+        emit Transfer(account, address(0), value);
     }
 
     function totalSupply() external view returns (uint256) {

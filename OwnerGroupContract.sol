@@ -34,6 +34,8 @@ contract OwnerGroupContract{
     event ExecuteEthWithdrawTransaction(address indexed owner, uint transactionIndex);
     event RevokeEthWithdrawTransaction(address indexed owner, uint transactionIndex);
 
+    event FundsDeposited(address indexed from, uint amount);
+
     uint private transactionCount = 0;
     struct OwnerTransaction {
         address owner;
@@ -69,6 +71,13 @@ contract OwnerGroupContract{
 
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableYield();
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
+    }
+
+
+    // Fallback function to receive Ether
+    receive() external payable {
+        // Emit an event indicating the deposit
+        emit FundsDeposited(msg.sender, msg.value);
     }
 
     function claimYield(uint256 amount, address toAddress) external onlyOwner returns (uint256){
@@ -276,10 +285,14 @@ contract OwnerGroupContract{
         return (transaction.toAddress, transaction.amount, transaction.executed, transaction.confirmationCount);
     }
 
+    function getEthBalance() public view returns (uint){
+        return address(this).balance;
+    }
+
     function submitEthWithdrawTransaction(address toAddress, uint amount) onlyOwner public returns (uint)
     {
         require(toAddress != address(0), "Invalid withdrawal Address");
-        require(amount > address(this).balance, "Not enough ETH Balance");
+        require(amount <= address(this).balance, "Not enough ETH Balance");
 
         withdrawContractEthTransactions[withdrawContractEthTransactionCount] = WithdrawContractEthTransaction({
             toAddress: toAddress,
@@ -318,7 +331,6 @@ contract OwnerGroupContract{
     }
 
     function _withdrawContractEth(address toAddress, uint256 amount) private {
-        require(address(this).balance >= amount, "Not enough Balance");
 
         payable(toAddress).transfer(amount);
         emit Transfer(address(this), toAddress, amount);

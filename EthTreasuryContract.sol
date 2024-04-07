@@ -120,7 +120,7 @@ contract EthTreasuryContract{
     }
 
     function withdrawContractEth(uint256 amount) public onlyOwner {
-        require(address(this).balance - _totalEthBalance <= amount, "Not enough ETH Balance");
+        require(address(this).balance - _totalEthBalance >= amount, "Not enough ETH Balance");
 
         payable(_ownerGroupContractAddress).transfer(amount);
         emit Transfer(address(this), _ownerGroupContractAddress, amount);
