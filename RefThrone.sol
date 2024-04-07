@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IBlast.sol";
 import "./IUserHistory.sol";
@@ -41,9 +40,6 @@ contract RefThrone {
     address private _userHistoryContractAddress;
     address private _ownerGroupContractAddress;
 
-    string[] private _serviceTypes;
-    string[] private _benefitTypes;
-
     uint256 private _lastThroneId = 0;
 
     mapping(uint256 throneId => Throne) private _thrones;
@@ -67,16 +63,6 @@ contract RefThrone {
         setUserHistoryContractAddress(userHistoryContractAddress);
         _ownerGroupContractAddress = ownerGroupContractAddress;
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
-
-        addServiceType("CEX");
-        addServiceType("DEX");
-        addServiceType("MISC");
-
-        addBenefitType("Fee Discount");
-        addBenefitType("USDT");
-        addBenefitType("USDC");
-        addBenefitType("BTC");
-        addBenefitType("ETH");
     }
 
     function setBlastContractAddress(address blastContractAddress) public onlyOwner {
@@ -114,42 +100,6 @@ contract RefThrone {
 
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
         return _blast.readGasParams(address(this));
-    }
-
-    function addServiceType(string memory serviceType) public onlyOwner {
-        _serviceTypes.push(serviceType);
-    }
-
-    function deleteServiceType(string memory serviceType) public onlyOwner {
-        for (uint i = 0; i < _serviceTypes.length; i++) {
-            if (_compareStrings(_serviceTypes[i], serviceType)) {
-                _serviceTypes[i] = _serviceTypes[_serviceTypes.length - 1];
-                _serviceTypes.pop();
-                break;
-            }
-        }
-    }
-
-    function getServiceTypes() external view returns (string[] memory) {
-        return _serviceTypes;
-    }
-
-    function addBenefitType(string memory benefitType) public onlyOwner {
-        _benefitTypes.push(benefitType);
-    }
-
-    function deleteBenefitType(string memory benefitType) public onlyOwner {
-        for (uint i = 0; i < _benefitTypes.length; i++) {
-            if (_compareStrings(_benefitTypes[i], benefitType)) {
-                _benefitTypes[i] = _benefitTypes[_benefitTypes.length - 1];
-                _benefitTypes.pop();
-                break;
-            }
-        }
-    }
-
-    function getBenefitTypes() external view returns (string[] memory) {
-        return _benefitTypes;
     }
 
     function getTotalTorDeposited() external view returns (uint256 torAmount) {
