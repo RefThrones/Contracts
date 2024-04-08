@@ -95,9 +95,9 @@ contract OwnerGroupContract{
         return IBlast(0x4300000000000000000000000000000000000002).claimAllYield(address(this), toAddress);
     }
 
-    function claimAllGas(address toAddress) external onlyOwner {
+    function claimAllGas(address toAddress) external onlyOwner returns (uint256) {
         // This function is public meaning anyone can claim the gas
-        IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), toAddress);
+        return IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), toAddress);
     }
 
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {

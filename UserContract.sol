@@ -32,7 +32,7 @@ contract UserContract is InvitationCodeGenerator{
 
     event BlacklistUpdated(address indexed _address, bool _isBlacklisted);
     event UserCreated(address indexed _address, string nickName, string xUrl, string uTubeUrl, string telegramUrl, string discordUrl);
-    event GenerateInvitaionCode(address indexed _address, string code);
+    event GenerateInvitationCode(address indexed _address, string code);
     event AddInvitee(address indexed inviter, address indexed invitee, string code);
 
     modifier onlyOwner (){
@@ -50,28 +50,13 @@ contract UserContract is InvitationCodeGenerator{
         _historyToken = IUserHistory(historyToken);
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
         _ownerGroupContractAddress = ownerGroupContractAddress;
-        IBlast(0x4300000000000000000000000000000000000002).configureClaimableYield();
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
     }
 
-    function claimYield(uint256 amount) external onlyOwner returns (uint256){
-        //This function is public meaning anyone can claim the yield
-        return IBlast(0x4300000000000000000000000000000000000002).claimYield(address(this), _ownerGroupContractAddress, amount);
-    }
 
-    function readClaimableYield() external view onlyOwner returns (uint256){
-        //This function is public meaning anyone can claim the yield
-        return IBlast(0x4300000000000000000000000000000000000002).readClaimableYield(address(this));
-    }
-
-    function claimAllYield() external onlyOwner returns (uint256){
-        //This function is public meaning anyone can claim the yield
-        return IBlast(0x4300000000000000000000000000000000000002).claimAllYield(address(this), _ownerGroupContractAddress);
-    }
-
-    function claimAllGas() external onlyOwner {
+    function claimAllGas() external onlyOwner returns (uint256) {
         // This function is public meaning anyone can claim the gas
-        IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), _ownerGroupContractAddress);
+        return IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), _ownerGroupContractAddress);
     }
 
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
@@ -120,12 +105,12 @@ contract UserContract is InvitationCodeGenerator{
         _invitationAddresses.push(msg.sender);
 
         _historyToken.setGenCodeActivity(msg.sender, block.timestamp);
-        emit GenerateInvitaionCode(msg.sender, _invitationCode[msg.sender]);
+        emit GenerateInvitationCode(msg.sender, _invitationCode[msg.sender]);
 
         return _invitationCode[msg.sender];
     }
 
-    function getInvitaionCode(address account) external view notBlacklisted returns (string memory){
+    function getInvitationCode(address account) external view notBlacklisted returns (string memory){
         return _invitationCode[account];
     }
 

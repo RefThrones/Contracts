@@ -79,15 +79,14 @@ contract EthTreasuryContract{
         return IBlast(0x4300000000000000000000000000000000000002).claimAllYield(address(this), _ownerGroupContractAddress);
     }
 
-    function claimAllGas() external onlyOwner {
+    function claimAllGas() external onlyOwner returns (uint256){
         // This function is public meaning anyone can claim the gas
-        IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), _ownerGroupContractAddress);
+        return IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), _ownerGroupContractAddress);
     }
 
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
         return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
     }
-
 
 
     function getContractEthBalance() external view returns (uint256){

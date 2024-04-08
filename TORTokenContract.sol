@@ -43,7 +43,7 @@ contract TORTokenContract {
         _totalSupply = 1_000_000_000 * torToWei;
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
         _ownerGroupContractAddress = ownerGroupContractAddress;
-        IBlast(0x4300000000000000000000000000000000000002).configureClaimableYield();
+
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
     }
 
@@ -52,28 +52,41 @@ contract TORTokenContract {
         _;
     }
 
-    function claimYield(uint256 amount) external onlyOwner returns (uint256){
-        //This function is public meaning anyone can claim the yield
-        return IBlast(0x4300000000000000000000000000000000000002).claimYield(address(this), _ownerGroupContractAddress, amount);
-    }
-
-    function readClaimableYield() external view onlyOwner returns (uint256){
-        //This function is public meaning anyone can claim the yield
-        return IBlast(0x4300000000000000000000000000000000000002).readClaimableYield(address(this));
-    }
-
-    function claimAllYield() external onlyOwner returns (uint256){
-        //This function is public meaning anyone can claim the yield
-        return IBlast(0x4300000000000000000000000000000000000002).claimAllYield(address(this), _ownerGroupContractAddress);
-    }
-
-    function claimAllGas() external onlyOwner {
+    function claimAllGas() external onlyOwner returns (uint256) {
         // This function is public meaning anyone can claim the gas
-        IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), _ownerGroupContractAddress);
+        return IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), _ownerGroupContractAddress);
     }
 
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
         return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
+    }
+
+    function getPendingMintOrBurnTransactions() public view onlyOwner returns (uint[] memory){
+
+        // Determine the count of pending transactions
+        uint pendingCount = 0;
+        for (uint i = 0; i < transactionCount; i++) {
+            if (!mintOrBurnTransaction[i].executed) {
+                pendingCount++;
+            }
+        }
+
+        // Create a dynamic array to store pending transaction indices
+        uint[] memory pendingTransactions = new uint[](pendingCount);
+        uint index = 0;
+        for (uint i = 0; i < transactionCount; i++) {
+            if (!mintOrBurnTransaction[i].executed) {
+                pendingTransactions[index] = i;
+                index++;
+            }
+        }
+        return pendingTransactions;
+    }
+
+    function getMintOrBurnTransaction(uint index) public view onlyOwner returns (address, uint, bool, bool, uint) {
+        require(index < transactionCount, "Index out of bounds");
+        MintOrBurnTransaction storage transaction = mintOrBurnTransaction[index];
+        return (transaction.toAddress, transaction.amount, transaction.executed, transaction.mintOrBurn, transaction.confirmationCount);
     }
 
     function submitMintOrBurnTransaction(address toAddress, uint amount, bool mintOrBurn) onlyOwner public returns (uint)
