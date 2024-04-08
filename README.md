@@ -10,6 +10,9 @@
 
 **RefThrone:** [0xa81dF2481ce429412a339B85c1edB7Bc92bB1Ed9](https://testnet.blastscan.io/address/0xa81dF2481ce429412a339B85c1edB7Bc92bB1Ed9),	2/17/2024 12:20:00		
 
-**RefThrone (Dev):** [0x6a658c383D5f02B54AEfB5EdAB32C78A4e9ee56F](https://testnet.blastscan.io/address/0x6a658c383D5f02B54AEfB5EdAB32C78A4e9ee56F)
+**RefThrone:** [0xa81dF2481ce429412a339B85c1edB7Bc92bB1Ed9](https://testnet.blastscan.io/address/0xa81dF2481ce429412a339B85c1edB7Bc92bB1Ed9),	2/17/2024 12:20:00		
+
+**RefThroneTypes:** [0x4b977faab7cb822926795e04d99Ea9Bc10Bab264](https://testnet.blastscan.io/address/0x4b977faab7cb822926795e04d99Ea9Bc10Bab264),	4/9/2024 01:18:00
 
 **OwnerGroupContract:** [0x69598806FD7782D05e16Ce67F3eAD614f027084d](https://testnet.blastscan.io/address/0x69598806FD7782D05e16Ce67F3eAD614f027084d),	4/9/2024 01:20:00
+
