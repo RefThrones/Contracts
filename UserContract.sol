@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "./IUserHistory.sol";
 import "./InvitationCodeGenerator.sol";
 import "./IOwnerGroupContract.sol";
-
+import "./IBlast.sol";
 
 contract UserContract is InvitationCodeGenerator{
 
@@ -27,11 +27,12 @@ contract UserContract is InvitationCodeGenerator{
     address[] private _invitationAddresses;
 
     mapping(address => address[]) private _invitees;
+    address private _ownerGroupContractAddress;
 
 
     event BlacklistUpdated(address indexed _address, bool _isBlacklisted);
     event UserCreated(address indexed _address, string nickName, string xUrl, string uTubeUrl, string telegramUrl, string discordUrl);
-    event GenerateInvitaionCode(address indexed _address, string code);
+    event GenerateInvitationCode(address indexed _address, string code);
     event AddInvitee(address indexed inviter, address indexed invitee, string code);
 
     modifier onlyOwner (){
@@ -48,6 +49,18 @@ contract UserContract is InvitationCodeGenerator{
         _owner = msg.sender;
         _historyToken = IUserHistory(historyToken);
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
+        _ownerGroupContractAddress = ownerGroupContractAddress;
+        IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
+    }
+
+
+    function claimAllGas() external onlyOwner returns (uint256) {
+        // This function is public meaning anyone can claim the gas
+        return IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), _ownerGroupContractAddress);
+    }
+
+    function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
+        return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
     }
 
     function updateUserHistoryContractAddress(address historyToken) external onlyOwner returns (bool){
@@ -92,12 +105,12 @@ contract UserContract is InvitationCodeGenerator{
         _invitationAddresses.push(msg.sender);
 
         _historyToken.setGenCodeActivity(msg.sender, block.timestamp);
-        emit GenerateInvitaionCode(msg.sender, _invitationCode[msg.sender]);
+        emit GenerateInvitationCode(msg.sender, _invitationCode[msg.sender]);
 
         return _invitationCode[msg.sender];
     }
 
-    function getInvitaionCode(address account) external view notBlacklisted returns (string memory){
+    function getInvitationCode(address account) external view notBlacklisted returns (string memory){
         return _invitationCode[account];
     }
 

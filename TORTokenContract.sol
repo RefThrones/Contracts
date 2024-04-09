@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "./IOwnerGroupContract.sol";
+import "./IBlast.sol";
 
 contract TORTokenContract {
 
@@ -10,6 +11,7 @@ contract TORTokenContract {
     mapping(address account => mapping(address spender => uint256)) private _allowances;
     mapping(uint => MintOrBurnTransaction) private mintOrBurnTransaction;
     mapping(uint => mapping(address =>bool)) isConfirmed;
+    address private _ownerGroupContractAddress;
 
     uint private transactionCount = 0;
     struct MintOrBurnTransaction {
@@ -40,11 +42,51 @@ contract TORTokenContract {
         _symbol = "TOR";
         _totalSupply = 1_000_000_000 * torToWei;
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
+        _ownerGroupContractAddress = ownerGroupContractAddress;
+
+        IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
     }
 
     modifier onlyOwner (){
         require(_ownerGroupContract.isOwner(msg.sender), "Only Owner have a permission.");
         _;
+    }
+
+    function claimAllGas() external onlyOwner returns (uint256) {
+        // This function is public meaning anyone can claim the gas
+        return IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), _ownerGroupContractAddress);
+    }
+
+    function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
+        return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
+    }
+
+    function getPendingMintOrBurnTransactions() public view onlyOwner returns (uint[] memory){
+
+        // Determine the count of pending transactions
+        uint pendingCount = 0;
+        for (uint i = 0; i < transactionCount; i++) {
+            if (!mintOrBurnTransaction[i].executed) {
+                pendingCount++;
+            }
+        }
+
+        // Create a dynamic array to store pending transaction indices
+        uint[] memory pendingTransactions = new uint[](pendingCount);
+        uint index = 0;
+        for (uint i = 0; i < transactionCount; i++) {
+            if (!mintOrBurnTransaction[i].executed) {
+                pendingTransactions[index] = i;
+                index++;
+            }
+        }
+        return pendingTransactions;
+    }
+
+    function getMintOrBurnTransaction(uint index) public view onlyOwner returns (address, uint, bool, bool, uint) {
+        require(index < transactionCount, "Index out of bounds");
+        MintOrBurnTransaction storage transaction = mintOrBurnTransaction[index];
+        return (transaction.toAddress, transaction.amount, transaction.executed, transaction.mintOrBurn, transaction.confirmationCount);
     }
 
     function submitMintOrBurnTransaction(address toAddress, uint amount, bool mintOrBurn) onlyOwner public returns (uint)
@@ -108,14 +150,14 @@ contract TORTokenContract {
     }
 
     function _mint(address to, uint256 amount) internal onlyOwner {
-        _balances[to] += amount * torToWei;
+        _balances[to] += amount;
     }
 
     function _burn(address account, uint256 value) internal onlyOwner{
 
-        _balances[account] = _balances[account] - value * torToWei;
-        _totalSupply = _totalSupply - value * torToWei;
-        emit Transfer(account, address(0), value * torToWei);
+        _balances[account] = _balances[account] - value ;
+        _totalSupply = _totalSupply - value;
+        emit Transfer(account, address(0), value);
     }
 
     function totalSupply() external view returns (uint256) {

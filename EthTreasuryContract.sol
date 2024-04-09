@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "./IBlast.sol";
+import "./IBlastPoints.sol";
 import "./IERC20.sol";
 import "./IUserHistory.sol";
 import "./IOwnerGroupContract.sol";
@@ -26,22 +27,8 @@ contract EthTreasuryContract{
     IERC20 private _token;
     IUserHistory private _historyToken;
     IOwnerGroupContract private _ownerGroupContract;
+    address private _ownerGroupContractAddress;
 
-    mapping(uint => WithdrawContractEthTransaction) private withdrawContractEthTransactions;
-    mapping(uint => mapping(address =>bool)) isConfirmedWithdrawContractEthTransactions;
-
-    uint private transactionCount = 0;
-    struct WithdrawContractEthTransaction {
-        address toAddress;
-        uint amount;
-        bool executed;
-        uint confirmationCount;
-    }
-
-    event SubmitEthWithdrawTransaction(address indexed toAddress, uint amount);
-    event ConfirmTransaction(address indexed owner, uint transactionIndex);
-    event ExecuteTransaction(address indexed owner, uint transactionIndex);
-    event RevokeConfirmation(address indexed owner, uint transactionIndex);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -59,10 +46,13 @@ contract EthTreasuryContract{
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
         _historyToken = IUserHistory(historyTokenContractAddress);
         _exchangeRate = 5000;
-        _depositFeeRate = 1;
-        _withdrawFeeRate = 2;
+        _depositFeeRate = 0;
+        _withdrawFeeRate = 0;
+        _ownerGroupContractAddress = ownerGroupContractAddress;
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableYield();
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
+        //testnet
+        IBlastPoints(0x2fc95838c71e76ec69ff817983BFf17c710F34E0).configurePointsOperator(msg.sender);
     }
 
     function updateUserHistoryContractAddress(address historyToken) external onlyOwner returns (bool){
@@ -74,80 +64,30 @@ contract EthTreasuryContract{
         return address(_historyToken);
     }
 
-    function claimYield(uint256 amount, address recipientOfYield) external onlyOwner returns (uint256){
+    function claimYield(uint256 amount) external onlyOwner returns (uint256){
         //This function is public meaning anyone can claim the yield
-        return IBlast(0x4300000000000000000000000000000000000002).claimYield(address(this), recipientOfYield, amount);
+        return IBlast(0x4300000000000000000000000000000000000002).claimYield(address(this), _ownerGroupContractAddress, amount);
     }
 
-    function readClaimableYield(address contractAddress) external view onlyOwner returns (uint256){
+    function readClaimableYield() external view onlyOwner returns (uint256){
         //This function is public meaning anyone can claim the yield
-        return IBlast(0x4300000000000000000000000000000000000002).readClaimableYield(contractAddress);
+        return IBlast(0x4300000000000000000000000000000000000002).readClaimableYield(address(this));
     }
 
-    function claimAllYield(address recipientOfYield) external onlyOwner returns (uint256){
+    function claimAllYield() external onlyOwner returns (uint256){
         //This function is public meaning anyone can claim the yield
-        return IBlast(0x4300000000000000000000000000000000000002).claimAllYield(address(this), recipientOfYield);
+        return IBlast(0x4300000000000000000000000000000000000002).claimAllYield(address(this), _ownerGroupContractAddress);
     }
 
-    function claimAllGas() external onlyOwner {
+    function claimAllGas() external onlyOwner returns (uint256){
         // This function is public meaning anyone can claim the gas
-        IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), msg.sender);
+        return IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), _ownerGroupContractAddress);
     }
 
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
         return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
     }
 
-
-    function submitEthWithdrawTransaction(address toAddress, uint amount) onlyOwner public returns (uint)
-    {
-        require(toAddress != address(0), "Invalid withdrawal Address");
-        require(address(this).balance - _totalEthBalance <= amount, "Not enough ETH Balance");
-
-        withdrawContractEthTransactions[transactionCount] = WithdrawContractEthTransaction({
-            toAddress: toAddress,
-            amount: amount,
-            executed: false,
-            confirmationCount: 0
-        });
-
-        emit SubmitEthWithdrawTransaction(toAddress, amount);
-
-        return transactionCount++;
-    }
-
-    function confirmTransaction(uint transactionIndex) onlyOwner public
-    {
-        require(!withdrawContractEthTransactions[transactionIndex].executed, "Transaction already executed");
-        require(!isConfirmedWithdrawContractEthTransactions[transactionIndex][msg.sender], "Transaction already confirmed");
-
-        withdrawContractEthTransactions[transactionIndex].confirmationCount++;
-        isConfirmedWithdrawContractEthTransactions[transactionIndex][msg.sender] = true;
-
-        emit ConfirmTransaction(msg.sender, transactionIndex);
-
-        uint ownerConfirm = _ownerGroupContract.getOwnerCount() / 2;
-        if(withdrawContractEthTransactions[transactionIndex].confirmationCount > ownerConfirm){
-            executeTransaction(transactionIndex);
-        }
-    }
-
-    function executeTransaction(uint transactionIndex) private {
-
-        withdrawContractEthTransactions[transactionIndex].executed = true;
-        _withdrawContractEth(withdrawContractEthTransactions[transactionIndex].toAddress, withdrawContractEthTransactions[transactionIndex].amount);
-
-        emit ExecuteTransaction(withdrawContractEthTransactions[transactionIndex].toAddress, transactionIndex);
-    }
-
-    function revokeConfirmation(uint transactionIndex) onlyOwner public {
-        require(!withdrawContractEthTransactions[transactionIndex].executed, "Transaction already executed");
-        require(isConfirmedWithdrawContractEthTransactions[transactionIndex][msg.sender], "Transaction not confirmed");
-
-        withdrawContractEthTransactions[transactionIndex].confirmationCount--;
-        isConfirmedWithdrawContractEthTransactions[transactionIndex][msg.sender] = false;
-        emit RevokeConfirmation(msg.sender, transactionIndex);
-    }
 
     function getContractEthBalance() external view returns (uint256){
         return address(this).balance;
@@ -178,9 +118,11 @@ contract EthTreasuryContract{
         return address(this).balance - _totalEthBalance;
     }
 
-    function _withdrawContractEth(address toAddress, uint256 amount) private {
-        payable(toAddress).transfer(amount);
-        emit Transfer(address(this), toAddress, amount);
+    function withdrawContractEth(uint256 amount) public onlyOwner {
+        require(address(this).balance - _totalEthBalance >= amount, "Not enough ETH Balance");
+
+        payable(_ownerGroupContractAddress).transfer(amount);
+        emit Transfer(address(this), _ownerGroupContractAddress, amount);
     }
 
     // Fallback function to receive Ether
@@ -215,21 +157,20 @@ contract EthTreasuryContract{
     // Function to withdraw deposited ETH and ERC-20 tokens
     function withdraw(uint256 tokenAmount) external {
         require(tokenAmount > 0, "Token amount must be greater than 0");
-        require(_token.balanceOf(msg.sender) > tokenAmount, "Not enough TOR balance.");
+        require(_token.balanceOf(msg.sender) >= tokenAmount, "Not enough TOR balance.");
         require(_token.allowance(msg.sender, address(this)) >= tokenAmount, "Insufficient allowance");
 
 
         uint256 ethAmount = tokenAmount / _exchangeRate;
 
         _totalTorBalance -= tokenAmount;
-        // withdrawal amount fee 2%
         ethAmount = (ethAmount * (100 - _withdrawFeeRate)) / 100;
         _totalEthBalance -= ethAmount;
 
         _ethBalances[msg.sender]-=ethAmount;
         _torBalances[msg.sender]-=tokenAmount;
 
-        // Transfer deposited ERC-20 tokens back to the sender
+        // Transfer deposited TOR tokens back to the sender
         _token.transferFrom(msg.sender, address(this), tokenAmount);
 
         // Transfer deposited ETH back to the sender
@@ -237,7 +178,6 @@ contract EthTreasuryContract{
 
         _historyToken.setWithdrawActivity(msg.sender, block.timestamp, tokenAmount, _torBalances[msg.sender]);
 
-        // Emit Withdrawal event
         emit Withdrawal(msg.sender, ethAmount);
     }
 

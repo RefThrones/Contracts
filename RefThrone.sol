@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IBlast.sol";
 import "./IUserHistory.sol";
+import "./IOwnerGroupContract.sol";
 
-contract RefThrone is Ownable {
+contract RefThrone {
     event ThroneStatus(uint256 throneId, Status status);
 
     enum Status {
@@ -33,13 +33,12 @@ contract RefThrone is Ownable {
     IBlast private _blast;
     IERC20 private _torToken;
     IUserHistory private _userHistory;
+    IOwnerGroupContract private _ownerGroupContract;
 
     address private _blastContractAddress;
     address private _torTokenContractAddress;
     address private _userHistoryContractAddress;
-
-    string[] private _serviceTypes;
-    string[] private _benefitTypes;
+    address private _ownerGroupContractAddress;
 
     uint256 private _lastThroneId = 0;
 
@@ -49,26 +48,21 @@ contract RefThrone is Ownable {
     uint256 private _totalTorDeposited = 0;
     mapping(address => uint256 torAmount) private _torDepositedByAddress;
 
-    // uint256 private _depositeFeeRate = 1;
-    // uint256 private _withdrawFeeRate = 2;
+    modifier onlyOwner (){
+        require(_ownerGroupContract.isOwner(msg.sender), "Only Owner have a permission.");
+        _;
+    }
 
     constructor(
         address torTokenContractAddress,
-        address userHistoryContractAddress
-    ) Ownable(msg.sender) {
+        address userHistoryContractAddress,
+        address ownerGroupContractAddress
+    ) {
         setBlastContractAddress(0x4300000000000000000000000000000000000002);
         setTorTokenContractAddress(torTokenContractAddress);
         setUserHistoryContractAddress(userHistoryContractAddress);
-
-        _addServiceType("CEX");
-        _addServiceType("DEX");
-        _addServiceType("MISC");
-
-        _addBenefitType("Fee Discount");
-        _addBenefitType("USDT");
-        _addBenefitType("USDC");
-        _addBenefitType("BTC");
-        _addBenefitType("ETH");
+        _ownerGroupContractAddress = ownerGroupContractAddress;
+        _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
     }
 
     function setBlastContractAddress(address blastContractAddress) public onlyOwner {
@@ -101,27 +95,11 @@ contract RefThrone is Ownable {
 
     function claimAllGas() external onlyOwner {
         // This function is public meaning anyone can claim the gas
-        _blast.claimAllGas(address(this), msg.sender);
+        _blast.claimAllGas(address(this), _ownerGroupContractAddress);
     }
 
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
         return _blast.readGasParams(address(this));
-    }
-
-    function addServiceType(string memory serviceType) external onlyOwner {
-        _addServiceType(serviceType);
-    }
-
-    function getServiceTypes() external view returns (string[] memory) {
-        return _serviceTypes;
-    }
-
-    function addBenefitType(string memory benefitType) external onlyOwner {
-        _addBenefitType(benefitType);
-    }
-
-    function getBenefitTypes() external view returns (string[] memory) {
-        return _benefitTypes;
     }
 
     function getTotalTorDeposited() external view returns (uint256 torAmount) {
@@ -141,7 +119,7 @@ contract RefThrone is Ownable {
         uint256 torAmount,
         string memory linkUrl
     ) external returns (uint256 throneId) {
-        require(_torToken.balanceOf(msg.sender) > torAmount, "Not enough TOR balance.");
+        require(_torToken.balanceOf(msg.sender) >= torAmount, "Not enough TOR balance.");
         require(_torToken.allowance(msg.sender, address(this)) >= torAmount, "Insufficient allowance");
         require(!_isThroneInReview(msg.sender, name, benefitType), "Already in review");
 
@@ -190,16 +168,16 @@ contract RefThrone is Ownable {
         require(
             (challengerBenefitAmount > ownedBenefitAmount) ||
             ((challengerBenefitAmount == ownedBenefitAmount) && (challengerTorAmount > ownedTorAmount)),
-            "Either benefit or TOR amount should be greater than current throne"
+            "Benefit or TOR amount should be greater than current throne"
         );
     }
 
     function withdrawFromThrone(uint256 throneId) external returns (bool success) {
-        require(_thrones[throneId].referrer == msg.sender, "addresses are not match between referrer and the sender");
-        require(_thrones[throneId].id > 0, "Invalid throne id");
+        require(_thrones[throneId].referrer == msg.sender, "addresses are not match");
+        require(_thrones[throneId].id > 0, "Invalid id");
         require(
             _thrones[throneId].status == Status.Owned || _thrones[throneId].status == Status.InReview,
-            "The throne is not in the state of Owned or InReview"
+            "Not in Owned or InReview state"
         );
 
         _withdraw(msg.sender, _thrones[throneId].torAmount);
@@ -210,10 +188,10 @@ contract RefThrone is Ownable {
     }
 
     function cancelThrone(uint256 throneId) external onlyOwner {
-        require(_thrones[throneId].id > 0, "Invalid throne id");
+        require(_thrones[throneId].id > 0, "Invalid id");
         require(
             _thrones[throneId].status == Status.Owned,
-            "The throne is not in the state of Owned"
+            "Not in Owned state"
         );
 
         _withdraw(msg.sender, _thrones[throneId].torAmount);
@@ -226,7 +204,7 @@ contract RefThrone is Ownable {
         require(torAmountToWithdraw > 0, "Invalid TOR amount to withdraw");
         require(_totalTorDeposited >= torAmountToWithdraw, "Not enough total TOR amount");
         require(_torDepositedByAddress[address_] >= torAmountToWithdraw, "Not enough TOR deposited");
-        require(_torToken.balanceOf(address(this)) >= torAmountToWithdraw, "Not enough TOR balance.");
+        require(_torToken.balanceOf(address(this)) >= torAmountToWithdraw, "Not enough TOR balance");
 
         _torToken.transfer(address_, torAmountToWithdraw);
         _totalTorDeposited -= torAmountToWithdraw;
@@ -242,7 +220,7 @@ contract RefThrone is Ownable {
     ) external onlyOwner {
         require(
             _thrones[throneId].status == Status.InReview,
-            "Only the throne in review can be modified"
+            "Not in InReview state"
         );
 
         _thrones[throneId].name = name;
@@ -257,7 +235,7 @@ contract RefThrone is Ownable {
         require(referrer != address(0), "Invalid referrer address");
         require(
             _thrones[throneId].status == Status.InReview,
-            "The throne is not in the state of InReview"
+            "Not in InReview state"
         );
 
         string memory name = _thrones[throneId].name;
@@ -282,8 +260,8 @@ contract RefThrone is Ownable {
     }
 
     function rejectThrone(uint256 throneId) external onlyOwner {
-        require(_thrones[throneId].id > 0, "Invalid throne id");
-        require(_thrones[throneId].status == Status.InReview, "The throne is not in the state of InReview");
+        require(_thrones[throneId].id > 0, "Invalid id");
+        require(_thrones[throneId].status == Status.InReview, "Not in InReview state");
 
         _withdraw(_thrones[throneId].referrer, _thrones[throneId].torAmount);
 
@@ -293,8 +271,8 @@ contract RefThrone is Ownable {
     }
 
     function _lostThrone(uint256 throneId) private onlyOwner {
-        require(_thrones[throneId].id > 0, "Invalid throne id");
-        require(_thrones[throneId].status == Status.Owned, "The throne is not in the state of Owned");
+        require(_thrones[throneId].id > 0, "Invalid id");
+        require(_thrones[throneId].status == Status.Owned, "Not in Owned state");
 
         _withdraw(_thrones[throneId].referrer, _thrones[throneId].torAmount);
 
@@ -349,20 +327,12 @@ contract RefThrone is Ownable {
     }
 
     function getThroneById(uint256 throneId) external view returns (Throne memory) {
-        require(_thrones[throneId].id > 0, "Invalid throne id");
+        require(_thrones[throneId].id > 0, "Invalid id");
         return _thrones[throneId];
     }
 
     function getOwnedThroneCount() external view returns (uint256) {
         return _getThroneCountInStatus(Status.Owned);
-    }
-
-    function _addServiceType(string memory serviceType) private {
-        _serviceTypes.push(serviceType);
-    }
-
-    function _addBenefitType(string memory benefitType) private {
-        _benefitTypes.push(benefitType);
     }
 
     function _getNewThroneId() private returns (uint256) {
