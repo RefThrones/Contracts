@@ -23,6 +23,8 @@ contract UserHistory is IUserHistory {
     uint16 private _throne_rate;
     uint16 private _usurp_rate;
 
+    bool private _trust_contract_check;
+
     enum ActType {
         DEPOSIT,    // 100 * ETH
         WITHDRAW,   // 20
@@ -67,10 +69,14 @@ contract UserHistory is IUserHistory {
     modifier onlyTrustedContract(){
         // tx.origin != msg.sender
         // require(whitelist_mapping[msg.sender], "You are not the RefThrone Contract.");
+        if (_trust_contract_check) {
+            require(_ownerGroupContract.isTrustedContract(msg.sender), "Only TrustedContract have a permission.");
+        }
         _;
     }
 
     constructor(address ownerGroupContractAddress) {
+        _trust_contract_check = false;
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
         _deposit_rate = 100;
         _withdraw_rate = 20;
@@ -146,6 +152,10 @@ contract UserHistory is IUserHistory {
 
     function getLastHistory(address account) public view returns (ActVals memory) {
         return activity_lastval[account];
+    }
+
+    function _isContractCheck(bool flag) public onlyOwner {
+        _trust_contract_check = flag;
     }
 
     function _getRewardRates() public view onlyOwner returns (uint16[8] memory) {
