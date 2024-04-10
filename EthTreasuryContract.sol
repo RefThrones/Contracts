@@ -40,7 +40,7 @@ contract EthTreasuryContract{
         _;
     }
 
-    constructor(address torTokenContractAddress, address ownerGroupContractAddress, address historyTokenContractAddress) {
+    constructor(address torTokenContractAddress, address ownerGroupContractAddress, address historyTokenContractAddress, address blastPointAddress, address operatorAddress) {
         _owner = msg.sender;
         _token = IERC20(torTokenContractAddress);
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
@@ -52,7 +52,7 @@ contract EthTreasuryContract{
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableYield();
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
         //testnet
-        IBlastPoints(0x2fc95838c71e76ec69ff817983BFf17c710F34E0).configurePointsOperator(msg.sender);
+        IBlastPoints(blastPointAddress).configurePointsOperator(operatorAddress);
     }
 
     function updateUserHistoryContractAddress(address historyToken) external onlyOwner returns (bool){
@@ -87,7 +87,6 @@ contract EthTreasuryContract{
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
         return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
     }
-
 
     function getContractEthBalance() external view returns (uint256){
         return address(this).balance;

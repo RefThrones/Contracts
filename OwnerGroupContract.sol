@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 import "./IBlast.sol";
+import "./IBlastPoints.sol";
 
 contract OwnerGroupContract{
 
@@ -59,7 +60,7 @@ contract OwnerGroupContract{
     }
 
 
-    constructor(address[] memory initialOwners) {
+    constructor(address[] memory initialOwners, address blastPointAddress, address operatorAddress) {
 
         for (uint256 i = 0; i < initialOwners.length; i++) {
             require(initialOwners[i] != address(0), "Invalid owner");
@@ -71,6 +72,7 @@ contract OwnerGroupContract{
 
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableYield();
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
+        IBlastPoints(blastPointAddress).configurePointsOperator(operatorAddress);
     }
 
 

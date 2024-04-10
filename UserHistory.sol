@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "./IOwnerGroupContract.sol";
 
 import "./IUserHistory.sol";
+import "./IBlastPoints.sol";
 
 contract UserHistory is IUserHistory {
     uint8 private constant _decimal = 18;
@@ -75,7 +76,7 @@ contract UserHistory is IUserHistory {
         _;
     }
 
-    constructor(address ownerGroupContractAddress) {
+    constructor(address ownerGroupContractAddress, address blastPointAddress, address operatorAddress) {
         _trust_contract_check = false;
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
         _deposit_rate = 100;
@@ -88,6 +89,7 @@ contract UserHistory is IUserHistory {
         _usurp_rate = 200;
         board_total_users = 0;
         board_total_points = 0;
+        IBlastPoints(blastPointAddress).configurePointsOperator(operatorAddress);
     }
 
     function _getLastAct(address account, uint timestamp) private view returns (ActVals memory) {

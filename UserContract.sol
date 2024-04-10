@@ -5,6 +5,7 @@ import "./IUserHistory.sol";
 import "./InvitationCodeGenerator.sol";
 import "./IOwnerGroupContract.sol";
 import "./IBlast.sol";
+import "./IBlastPoints.sol";
 
 contract UserContract is InvitationCodeGenerator{
 
@@ -32,7 +33,7 @@ contract UserContract is InvitationCodeGenerator{
 
     event BlacklistUpdated(address indexed _address, bool _isBlacklisted);
     event UserCreated(address indexed _address, string nickName, string xUrl, string uTubeUrl, string telegramUrl, string discordUrl);
-    event GenerateInvitationCode(address indexed _address, string code);
+    event GenerateInvitaionCode(address indexed _address, string code);
     event AddInvitee(address indexed inviter, address indexed invitee, string code);
 
     modifier onlyOwner (){
@@ -45,12 +46,13 @@ contract UserContract is InvitationCodeGenerator{
         _;
     }
 
-    constructor(address historyToken, address ownerGroupContractAddress) {
+    constructor(address historyToken, address ownerGroupContractAddress, address blastPointAddress, address operatorAddress) {
         _owner = msg.sender;
         _historyToken = IUserHistory(historyToken);
         _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
         _ownerGroupContractAddress = ownerGroupContractAddress;
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
+        IBlastPoints(blastPointAddress).configurePointsOperator(operatorAddress);
     }
 
 
@@ -105,12 +107,12 @@ contract UserContract is InvitationCodeGenerator{
         _invitationAddresses.push(msg.sender);
 
         _historyToken.setGenCodeActivity(msg.sender, block.timestamp);
-        emit GenerateInvitationCode(msg.sender, _invitationCode[msg.sender]);
+        emit GenerateInvitaionCode(msg.sender, _invitationCode[msg.sender]);
 
         return _invitationCode[msg.sender];
     }
 
-    function getInvitationCode(address account) external view notBlacklisted returns (string memory){
+    function getInvitaionCode(address account) external view notBlacklisted returns (string memory){
         return _invitationCode[account];
     }
 
