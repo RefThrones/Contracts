@@ -15,6 +15,11 @@ contract RefThroneTypes {
         _;
     }
 
+    modifier onlyAdmin (){
+        require(IOwnerGroupContract(_ownerGroupContractAddress).isAdmin(msg.sender), "Only Admin have a permission.");
+        _;
+    }
+
     constructor(address ownerGroupContractAddress) {
         IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
 
@@ -39,7 +44,7 @@ contract RefThroneTypes {
         return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
     }
 
-    function addServiceType(string memory serviceType) external onlyOwner {
+    function addServiceType(string memory serviceType) external onlyAdmin {
         _addServiceType(serviceType);
     }
 
@@ -47,7 +52,7 @@ contract RefThroneTypes {
         _serviceTypes.push(serviceType);
     }
 
-    function deleteServiceType(string memory serviceType) public onlyOwner {
+    function deleteServiceType(string memory serviceType) public onlyAdmin {
         _deleteServiceType(serviceType);
     }
 
@@ -65,7 +70,7 @@ contract RefThroneTypes {
         return _serviceTypes;
     }
 
-    function addBenefitType(string memory benefitType) external onlyOwner {
+    function addBenefitType(string memory benefitType) external onlyAdmin {
         _addBenefitType(benefitType);
     }
 
@@ -73,7 +78,7 @@ contract RefThroneTypes {
         _benefitTypes.push(benefitType);
     }
 
-    function deleteBenefitType(string memory benefitType) external onlyOwner {
+    function deleteBenefitType(string memory benefitType) external onlyAdmin {
         _deleteBenefitType(benefitType);
     }
 

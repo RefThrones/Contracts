@@ -48,8 +48,13 @@ contract RefThrone {
     uint256 private _totalTorDeposited = 0;
     mapping(address => uint256 torAmount) private _torDepositedByAddress;
 
-    modifier onlyOwner (){
+    modifier onlyOwner () {
         require(_ownerGroupContract.isOwner(msg.sender), "Only Owner have a permission.");
+        _;
+    }
+
+    modifier onlyAdmin () {
+        require(_ownerGroupContract.isAdmin(msg.sender), "Only Admin have a permission.");
         _;
     }
 
@@ -58,11 +63,11 @@ contract RefThrone {
         address userHistoryContractAddress,
         address ownerGroupContractAddress
     ) {
+        _ownerGroupContractAddress = ownerGroupContractAddress;
+        _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
         setBlastContractAddress(0x4300000000000000000000000000000000000002);
         setTorTokenContractAddress(torTokenContractAddress);
         setUserHistoryContractAddress(userHistoryContractAddress);
-        _ownerGroupContractAddress = ownerGroupContractAddress;
-        _ownerGroupContract = IOwnerGroupContract(ownerGroupContractAddress);
     }
 
     function setBlastContractAddress(address blastContractAddress) public onlyOwner {
@@ -187,7 +192,7 @@ contract RefThrone {
         return true;
     }
 
-    function cancelThrone(uint256 throneId) external onlyOwner {
+    function cancelThrone(uint256 throneId) external onlyAdmin {
         require(_thrones[throneId].id > 0, "Invalid id");
         require(
             _thrones[throneId].status == Status.Owned,
@@ -217,7 +222,7 @@ contract RefThrone {
         string memory serviceType,
         string memory benefitType,
         string memory linkUrl
-    ) external onlyOwner {
+    ) external onlyAdmin {
         require(
             _thrones[throneId].status == Status.InReview,
             "Not in InReview state"
@@ -229,7 +234,7 @@ contract RefThrone {
         _thrones[throneId].linkUrl = linkUrl;
     }
 
-    function approveThrone(uint256 throneId) external onlyOwner {
+    function approveThrone(uint256 throneId) external onlyAdmin {
         address referrer = _thrones[throneId].referrer;
 
         require(referrer != address(0), "Invalid referrer address");
@@ -259,7 +264,7 @@ contract RefThrone {
         emit ThroneStatus(throneId, Status.Owned);
     }
 
-    function rejectThrone(uint256 throneId) external onlyOwner {
+    function rejectThrone(uint256 throneId) external onlyAdmin {
         require(_thrones[throneId].id > 0, "Invalid id");
         require(_thrones[throneId].status == Status.InReview, "Not in InReview state");
 
@@ -270,7 +275,7 @@ contract RefThrone {
         emit ThroneStatus(throneId, Status.Rejected);
     }
 
-    function _lostThrone(uint256 throneId) private onlyOwner {
+    function _lostThrone(uint256 throneId) private onlyAdmin {
         require(_thrones[throneId].id > 0, "Invalid id");
         require(_thrones[throneId].status == Status.Owned, "Not in Owned state");
 
@@ -296,7 +301,7 @@ contract RefThrone {
         return ownedThrones;
     }
 
-    function getAllThronesInReview() external view onlyOwner returns (Throne[] memory) {
+    function getAllThronesInReview() external view onlyAdmin returns (Throne[] memory) {
         uint throneInReviewCount = _getThroneCountInStatus(Status.InReview);
 
         Throne[] memory thronesInReview = new Throne[](throneInReviewCount);
