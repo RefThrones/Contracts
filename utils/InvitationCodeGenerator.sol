@@ -43,7 +43,7 @@ contract InvitationCodeGenerator {
         return keccak256(bytes(_currentString)) == keccak256(bytes("ZZZZZ"));
     }
 
-    function encodeBase32hex(string memory input) public pure returns (string memory) {
+    function encodeBase32hex(string memory input) private pure returns (string memory) {
         bytes memory inputData = bytes(input);
         require(inputData.length == 5, "Input length should be 5");
 
