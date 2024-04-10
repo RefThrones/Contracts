@@ -6,7 +6,7 @@
 
 **User:** [0x422C75Be52C1C0BeC2FC7F332357C95a355B6E48](https://testnet.blastscan.io/token/0x422C75Be52C1C0BeC2FC7F332357C95a355B6E48),	(Updated_At 04.08 01:30)			
 
-**UserHistory:** [0xbd103C21d3A9B1775d3d83C6b26b7d4bF25bDCC3](https://testnet.blastscan.io/token/0xbd103C21d3A9B1775d3d83C6b26b7d4bF25bDCC3),	  4/8/2024 01:30
+**UserHistory:** [0x6c36A133265104cc902b181833eF3d9d95fF1142](https://testnet.blastscan.io/token/0x6c36A133265104cc902b181833eF3d9d95fF1142),	  4/10/2024 23:30
 
 **RefThrone:** [0xa81dF2481ce429412a339B85c1edB7Bc92bB1Ed9](https://testnet.blastscan.io/address/0xa81dF2481ce429412a339B85c1edB7Bc92bB1Ed9),	2/17/2024 12:20:00		
 
