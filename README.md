@@ -8,9 +8,9 @@
 
 **UserHistory:** [0x6c36A133265104cc902b181833eF3d9d95fF1142](https://testnet.blastscan.io/token/0x6c36A133265104cc902b181833eF3d9d95fF1142),	  4/10/2024 23:30
 
-**RefThrone:** [0x89033F1bf37CEB950F8dAF2833faC480E34ffdCE](https://testnet.blastscan.io/address/0xa81dF2481ce429412a339B85c1edB7Bc92bB1Ed9),	4/10/2024 11:40:00		
+**RefThrone:** [0x2D4A1AE4830Ca3Eff8ae9Be7DF4814B217fdF7b1](https://testnet.blastscan.io/address/0xa81dF2481ce429412a339B85c1edB7Bc92bB1Ed9),	4/11/2024 01:09:00		
 
-**RefThroneTypes:** [0x2e3f141be78D04D8C17AD19926d05812bb040392](https://testnet.blastscan.io/address/0x4b977faab7cb822926795e04d99Ea9Bc10Bab264),	4/10/2024 11:40:00
+**RefThroneTypes:** [0x7D7F9EA80b547f3f94cB72e24AE9CA49968d2E25](https://testnet.blastscan.io/address/0x4b977faab7cb822926795e04d99Ea9Bc10Bab264),	4/11/2024 01:09:00
 
 **OwnerGroupContract:** [0x69598806FD7782D05e16Ce67F3eAD614f027084d](https://testnet.blastscan.io/address/0x69598806FD7782D05e16Ce67F3eAD614f027084d),	4/9/2024 01:20:00
 
