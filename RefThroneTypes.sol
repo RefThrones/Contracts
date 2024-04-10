@@ -2,9 +2,17 @@
 pragma solidity ^0.8.20;
 
 import "./IBlast.sol";
+import "./IBlastPoints.sol";
 import "./IOwnerGroupContract.sol";
 
 contract RefThroneTypes {
+
+    IBlast private _blast;
+    IBlastPoints private _blastPoints;
+
+    address private _blastContractAddress;
+    address private _blastPointsContractAddress;
+    address private _blastPointsOperatorAddress;
     address private _ownerGroupContractAddress;
 
     string[] private _serviceTypes;
@@ -20,10 +28,23 @@ contract RefThroneTypes {
         _;
     }
 
-    constructor(address ownerGroupContractAddress) {
-        IBlast(0x4300000000000000000000000000000000000002).configureClaimableGas();
-
+    constructor(
+        address ownerGroupContractAddress,
+        address blastPointsContractAddress,
+        address blastPointsOperatorAddress
+    ) {
         _ownerGroupContractAddress = ownerGroupContractAddress;
+
+        _blastContractAddress = 0x4300000000000000000000000000000000000002;
+        _blast = IBlast(_blastContractAddress);
+        _blast.configureClaimableGas();
+
+        // BlastPoints Testnet address: 0x2fc95838c71e76ec69ff817983BFf17c710F34E0
+        // BlastPoints Mainnet address: 0x2536FE9ab3F511540F2f9e2eC2A805005C3Dd800
+        _blastPointsContractAddress = blastPointsContractAddress;
+        _blastPointsOperatorAddress = blastPointsOperatorAddress;
+        _blastPoints = IBlastPoints(_blastPointsContractAddress);
+        _blastPoints.configurePointsOperator(_blastPointsOperatorAddress);
 
         _addServiceType("CEX");
         _addServiceType("DEX");
@@ -36,12 +57,20 @@ contract RefThroneTypes {
         _addBenefitType("ETH");
     }
 
+    function getBlastPointsContractAddress() external view returns (address) {
+        return _blastPointsContractAddress;
+    }
+
+    function getBlastPointsOperatorAddress() external view returns (address) {
+        return _blastPointsOperatorAddress;
+    }
+
     function claimAllGas() external onlyOwner {
-        IBlast(0x4300000000000000000000000000000000000002).claimAllGas(address(this), _ownerGroupContractAddress);
+        _blast.claimAllGas(address(this), _ownerGroupContractAddress);
     }
 
     function readGasParams() external view onlyOwner returns (uint256 etherSeconds, uint256 etherBalance, uint256 lastUpdated, GasMode) {
-        return IBlast(0x4300000000000000000000000000000000000002).readGasParams(address(this));
+        return _blast.readGasParams(address(this));
     }
 
     function addServiceType(string memory serviceType) external onlyAdmin {
