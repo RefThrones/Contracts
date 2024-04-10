@@ -50,6 +50,7 @@ contract RefThroneTypes {
         _addServiceType("DEX");
         _addServiceType("MISC");
 
+        _addBenefitType("None");
         _addBenefitType("Fee Discount");
         _addBenefitType("USDT");
         _addBenefitType("USDC");
