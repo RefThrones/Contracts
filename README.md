@@ -14,3 +14,33 @@
 
 **OwnerGroupContract:** [0x0902daB19021EcBC8a02E393D6dddE644182cbE3](https://testnet.blastscan.io/address/0x0902daB19021EcBC8a02E393D6dddE644182cbE3),	latest (04.11)
 
+
+# Dev Env configuration
+
+brew install node
+
+nvm install v20.12.2 
+
+npm install @openzeppelin/contracts
+
+npm hardhat install
+
+npm install dotenv
+
+npm install --save-dev @nomicfoundation/hardhat-verify 
+
+
+
+# HardHat
+**Compile:** npx hardhat compile  
+
+**Deploy:** npx hardhat ignition deploy ignition/modules/TORTokenContract.js --network blast_sepolia  
+
+**Verify:** npx hardhat verify --network blast_sepolia [deployed contract address] --constructor-args arguments.js 
+
+ex) npx hardhat verify --network blast_sepolia 0xB4006ccac99b73F227B314fD1d0274DAAAB8021F --constructor-args arguments.js 
+
+
+
+
+
