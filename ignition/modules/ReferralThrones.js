@@ -1,6 +1,6 @@
 const { buildModule } = require("@nomicfoundation/hardhat-ignition/modules");
 
-module.exports = buildModule("ReferalThronesModule", (m) => {
+module.exports = buildModule("ReferralThronesModule", (m) => {
   const OwnerGroupContract = m.contract(
     "OwnerGroupContract", 
     [
