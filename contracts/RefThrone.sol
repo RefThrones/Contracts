@@ -83,9 +83,9 @@ contract RefThrone {
         _blastPoints = IBlastPoints(_blastPointsContractAddress);
         _blastPoints.configurePointsOperator(_blastPointsOperatorAddress);
 
-        setTorTokenContractAddress(torTokenContractAddress);
+        _setTorTokenContractAddress(torTokenContractAddress);
 
-        setUserHistoryContractAddress(userHistoryContractAddress);
+        _setUserHistoryContractAddress(userHistoryContractAddress);
     }
 
     function getBlastPointsContractAddress() external view returns (address) {
@@ -96,7 +96,11 @@ contract RefThrone {
         return _blastPointsOperatorAddress;
     }
 
-    function setTorTokenContractAddress(address torTokenContractAddress) public onlyOwner {
+    function setTorTokenContractAddress(address torTokenContractAddress) external onlyOwner {
+        _setTorTokenContractAddress(torTokenContractAddress);
+    }
+
+    function _setTorTokenContractAddress(address torTokenContractAddress) private {
         _torTokenContractAddress = torTokenContractAddress;
         _torToken = IERC20(_torTokenContractAddress);
     }
@@ -105,7 +109,11 @@ contract RefThrone {
         return _torTokenContractAddress;
     }
 
-    function setUserHistoryContractAddress(address userHistoryContractAddress) public onlyOwner {
+    function setUserHistoryContractAddress(address userHistoryContractAddress) external onlyOwner {
+        _setUserHistoryContractAddress(userHistoryContractAddress);
+    }
+
+    function _setUserHistoryContractAddress(address userHistoryContractAddress) private {
         _userHistoryContractAddress = userHistoryContractAddress;
         _userHistory = IUserHistory(_userHistoryContractAddress);
     }
