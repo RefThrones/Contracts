@@ -8,7 +8,7 @@
 
 **UserHistory:** [0xb8410C172bEFAC21FeE558d36e095dA50a125537](https://testnet.blastscan.io/token/0xb8410C172bEFAC21FeE558d36e095dA50a125537),	  latest (04.11)
 
-**RefThrone:** [0xf91d93A22CEe0B8b8c76a0412523C3566eAe0938](https://testnet.blastscan.io/address/0xf91d93A22CEe0B8b8c76a0412523C3566eAe0938),	latest (04.11)		
+**RefThrone:** [0x6e1b222516472e693E3D3Bb0fc2745fA9A4914D2](https://testnet.blastscan.io/address/0xf91d93A22CEe0B8b8c76a0412523C3566eAe0938),	latest (04.18)		
 
 **RefThroneTypes:** [0x359aAd7322d1374B4B739E5bB17C846c7dC15f10](https://testnet.blastscan.io/address/0x2715BADd0622E3d6f84eFFaEB742f5ae712199c4),	latest (04.11)
 
