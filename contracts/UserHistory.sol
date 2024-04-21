@@ -36,7 +36,8 @@ contract UserHistory is IUserHistory {
         DAILY,      // 20
         THRONE,     // 100
         USURP,      // 200
-        ABANDON     // 10
+        ABANDON,    // 10
+        PREV_POINT
     }
 
     struct ActVals {
