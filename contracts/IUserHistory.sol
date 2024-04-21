@@ -17,4 +17,5 @@ interface IUserHistory {
 
     function setUsurpActivity(address account, uint timestamp) external;
 
+    function setAbandonActivity(address account, uint timestamp) external;
 } 

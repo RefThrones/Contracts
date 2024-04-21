@@ -23,6 +23,7 @@ contract UserHistory is IUserHistory {
     uint16 private _daily_rate;
     uint16 private _throne_rate;
     uint16 private _usurp_rate;
+    uint16 private _abandon_rate;
 
     bool private _trust_contract_check;
 
@@ -34,7 +35,8 @@ contract UserHistory is IUserHistory {
         GEN_CODE,   // 50
         DAILY,      // 20
         THRONE,     // 100
-        USURP       // 200
+        USURP,      // 200
+        ABANDON     // 10
     }
 
     struct ActVals {
@@ -87,6 +89,7 @@ contract UserHistory is IUserHistory {
         _daily_rate = 20;
         _throne_rate = 100;
         _usurp_rate = 200;
+        _abandon_rate = 10;
         board_total_users = 0;
         board_total_points = 0;
         IBlastPoints(blastPointAddress).configurePointsOperator(operatorAddress);
@@ -174,6 +177,7 @@ contract UserHistory is IUserHistory {
         else if (act_type == ActType.DAILY)     _daily_rate = rate_value;
         else if (act_type == ActType.THRONE)    _throne_rate = rate_value;
         else if (act_type == ActType.USURP)     _usurp_rate = rate_value;
+        else if (act_type == ActType.ABANDON)   _abandon_rate = rate_value;
 
         // reward_rates[act_type] = rate_value;
     }
@@ -257,6 +261,7 @@ contract UserHistory is IUserHistory {
                 // else if (act_type == ActType.DAILY)    { activity_points *= _daily_rate; }
                 else if (act_type == ActType.THRONE)   { activity_points *= _throne_rate; }
                 else if (act_type == ActType.USURP)    { activity_points *= _usurp_rate; }
+                else if (act_type == ActType.ABANDON)  { activity_points *= _abandon_rate; }
             }
         }
 
@@ -321,6 +326,10 @@ contract UserHistory is IUserHistory {
 
     function setUsurpActivity(address account, uint timestamp) external onlyTrustedContract {
         _AllActivity(account, timestamp, ActType.USURP, 0, 0);
+    }
+
+    function setAbandonActivity(address account, uint timestamp) external onlyTrustedContract {
+        _AllActivity(account, timestamp, ActType.ABANDON, 0, 0);
     }
 
     function getHistoryLength(address account) public view returns (uint){
