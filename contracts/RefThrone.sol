@@ -213,6 +213,8 @@ contract RefThrone {
 
         _deleteThrone(throneId);
 
+        _userHistory.setAbandonActivity(msg.sender, block.timestamp);
+
         return true;
     }
 
