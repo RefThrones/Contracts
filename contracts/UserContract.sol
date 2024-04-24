@@ -25,6 +25,7 @@ contract UserContract is InvitationCodeGenerator{
     mapping(address account => User) private _users;
     mapping(address => bool) public blacklist;
     mapping(address => string) private _invitationCode;
+    mapping(address => string) private _inviterCode;
     address[] private _invitationAddresses;
 
     mapping(address => address[]) private _invitees;
@@ -75,13 +76,15 @@ contract UserContract is InvitationCodeGenerator{
     }
 
     function addInvitee(string memory code) external notBlacklisted returns (bool) {
+        require(keccak256(abi.encodePacked(_invitationCode[msg.sender])) != keccak256(abi.encodePacked(code)), "code error");
 
         uint256 length = _invitationAddresses.length;
         for (uint256 i=0; i<length; i++){
-
+     
             if(keccak256(abi.encodePacked(_invitationCode[_invitationAddresses[i]])) == keccak256(abi.encodePacked(code)))
             {
                 _invitees[_invitationAddresses[i]].push(msg.sender);
+                _inviterCode[msg.sender] = code;
                 _historyToken.setInviteeActivity(msg.sender, block.timestamp);
                 _historyToken.setInviterActivity(_invitationAddresses[i], block.timestamp);
                 emit AddInvitee(_invitationAddresses[i], msg.sender, code);
@@ -90,6 +93,11 @@ contract UserContract is InvitationCodeGenerator{
         }
 
         return false;
+    }
+
+    function getMyInviterCode() external view notBlacklisted returns (string memory)
+    {
+        return _inviterCode[msg.sender];
     }
 
     function getInvitees() external view notBlacklisted returns (address[] memory) {
