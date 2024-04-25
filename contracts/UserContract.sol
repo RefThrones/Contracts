@@ -77,8 +77,11 @@ contract UserContract is InvitationCodeGenerator{
 
     function addInvitee(string memory code) external notBlacklisted returns (bool) {
         require(keccak256(abi.encodePacked(_invitationCode[msg.sender])) != keccak256(abi.encodePacked(code)), "code error");
+        require(bytes(_inviterCode[msg.sender]).length == 0, "AR");
+        
 
         uint256 length = _invitationAddresses.length;
+
         for (uint256 i=0; i<length; i++){
      
             if(keccak256(abi.encodePacked(_invitationCode[_invitationAddresses[i]])) == keccak256(abi.encodePacked(code)))
@@ -107,7 +110,7 @@ contract UserContract is InvitationCodeGenerator{
 
     function generateInvitationCode() external notBlacklisted returns (string memory) {
 
-        require(bytes(_invitationCode[msg.sender]).length <= 0, "Invitation code already generated.");
+        require(bytes(_invitationCode[msg.sender]).length <= 0, "IAG");
 
         _invitationSize++;
 
@@ -118,6 +121,24 @@ contract UserContract is InvitationCodeGenerator{
         emit GenerateInvitaionCode(msg.sender, _invitationCode[msg.sender]);
 
         return _invitationCode[msg.sender];
+    }
+
+    function getGeneratedCodeCount() external view onlyOwner returns (uint256)
+    {
+        return _invitationSize;
+    }
+
+    function getGeneratedCodes() external view onlyOwner returns (string[] memory)
+    {        
+        require(_invitationAddresses.length > 0, "NA");
+        
+        string[] memory codes = new string[](_invitationAddresses.length);
+
+        for (uint256 i = 0; i < _invitationAddresses.length; i++) {
+            codes[i] = _invitationCode[_invitationAddresses[i]];
+        }
+
+        return codes;
     }
 
     function getInvitaionCode(address account) external view notBlacklisted returns (string memory){
