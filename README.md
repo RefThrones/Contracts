@@ -4,7 +4,7 @@
 
 **EthTreasury:** [0x08e913880139B9224afF2133149C7fb138Ed5836](https://testnet.blastscan.io/address/0x08e913880139B9224afF2133149C7fb138Ed5836),	latest (04.11)			
 
-**User:** [0x49F39aC870713664837b156065fa88D6659A036c](https://testnet.blastscan.io/token/0x49F39aC870713664837b156065fa88D6659A036c),	latest (04.25)			
+**User:** [0x49F39aC870713664837b156065fa88D6659A036c](https://testnet.blastscan.io/token/0x20836F89Ab9ba41872482d3b9ECEddA6B3f6088A),	latest (04.25)			
 
 **UserHistory:** [0xb8410C172bEFAC21FeE558d36e095dA50a125537](https://testnet.blastscan.io/token/0xb8410C172bEFAC21FeE558d36e095dA50a125537),	  latest (04.11)
 
