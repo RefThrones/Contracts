@@ -18,29 +18,64 @@
 
 # Dev Env configuration
 
-brew install node
+> brew install node
 
-nvm install v20.12.2 
+> nvm install v20.12.2 
 
-npm install @openzeppelin/contracts
+> npm install @openzeppelin/contracts
 
-npm hardhat install
+> npm hardhat install
 
-npm install dotenv
+> npm install dotenv
 
-npm install --save-dev @nomicfoundation/hardhat-verify 
+> npm install --save-dev @nomicfoundation/hardhat-verify 
 
 
 
-# HardHat
-**Compile:** npx hardhat compile  
+# DEPLOYMENT, VERIFICATION (Using HardHat)
+**Compile:** 
+> npx hardhat compile  
 
-**Deploy:** npx hardhat ignition deploy ignition/modules/TORTokenContract.js --network blast_sepolia  
+**Deploy (Blast_Sepolia):** 
+> npx hardhat ignition deploy ignition/modules/ReferralThrones.js --network blast_sepolia
 
-**Verify:** npx hardhat verify --network blast_sepolia [deployed contract address] --constructor-args arguments.js 
+**Deploy (Blast_Mainnet):** 
+> npx hardhat ignition deploy ignition/modules/ReferralThrones.js --network blast_mainnet  
 
-ex) npx hardhat verify --network blast_sepolia 0xB4006ccac99b73F227B314fD1d0274DAAAB8021F --constructor-args arguments.js 
+**Verify all contracts (Blast_Sepolia):** 
+> chmod +x execVerifyAll.js
+> 
+> execVerifyAll.js testnet
 
+**Verify all contracts (Blast_Mainnet):** 
+> chmod +x execVerifyAll.js
+> 
+> execVerifyAll.js mainnet
+
+**Verify individual contract (Blast_Sepolia):** 
+> npx hardhat verify --network blast_sepolia [deployed contract address] --constructor-args ./verification-arguments/CONTRACT_FILE_NAME-args.js
+
+**Verify individual contract (Blast_Sepolia):** 
+> npx hardhat verify --network blast_mainnet [deployed contract address] --constructor-args ./verification-arguments/CONTRACT_FILE_NAME-args.js
+
+
+
+# .env
+OWNER_GROUP_ADDRESSES="0x6a7646E5c6A26F662415Aa763BE1D38987CcBaf7,0x156aD54B68362F2D54520de9951499d5cd251033,0x0Aa5447B53A74c5a8EFc23e7f638108BC86D1028,0xC5296c803e1FfFdd91561f17650757578e0D7bAb,0x58179fe0488e8224039DDd093F652B4605Ed11d4"
+BLAST_POINT_CONTRACT_ADDRESS="0x2fc95838c71e76ec69ff817983BFf17c710F34E0"
+BLAST_POINT_OPERATOR_ADDRESS="0x5b50De0439C6ecF939856d2FDcFE191659Aa4ee7"
+
+PRIVATE_KEY = OWNER's PRIVATE KEY
+ETHERSCAN_API_KEY = YOUR_API_KEY
+BLASTSCAN_API_KEY = YOUR_API_KEY
+
+OWNER_GROUP_CONTRACT_ADDRESS = DEPLOYED_CONTRACT_ADDRESS
+REFTHRONE_TYPES_CONTRACT_ADDRESS = DEPLOYED_CONTRACT_ADDRESS
+TOR_TOKEN_CONTRACT_ADDRESS = DEPLOYED_CONTRACT_ADDRESS
+USER_HISTORY_CONTRACT_ADDRESS = DEPLOYED_CONTRACT_ADDRESS
+ETH_TREASURY_CONTRACT_ADDRESS = DEPLOYED_CONTRACT_ADDRESS
+REFTHRONE_CONTRACT_ADDRESS = DEPLOYED_CONTRACT_ADDRESS
+USER_CONTRACT_ADDRESS = DEPLOYED_CONTRACT_ADDRESS
 
 
 
