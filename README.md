@@ -1,18 +1,18 @@
 # Latest contract deployment information
 
-**TOR Token:** [0x32aACF8e2776578Fd1ED55211355C538D54ECc8c](https://testnet.blastscan.io/address/0x32aACF8e2776578Fd1ED55211355C538D54ECc8c),	latest (04.11)		
+**TOR Token:** [0xd1656cd192ab0a3d094CC7338e6852CC84d27249](https://testnet.blastscan.io/address/0xd1656cd192ab0a3d094CC7338e6852CC84d27249),	latest (04.24)		
 
-**EthTreasury:** [0x08e913880139B9224afF2133149C7fb138Ed5836](https://testnet.blastscan.io/address/0x08e913880139B9224afF2133149C7fb138Ed5836),	latest (04.11)			
+**EthTreasury:** [0xf969D1644E9F1fE7e962170bD9a1CCE480F8Aa19](https://testnet.blastscan.io/address/0xf969D1644E9F1fE7e962170bD9a1CCE480F8Aa19),	latest (04.24)			
 
-**User:** [0x49F39aC870713664837b156065fa88D6659A036c](https://testnet.blastscan.io/token/0x20836F89Ab9ba41872482d3b9ECEddA6B3f6088A),	latest (04.25)			
+**User:** [0x20836F89Ab9ba41872482d3b9ECEddA6B3f6088A](https://testnet.blastscan.io/token/0x20836F89Ab9ba41872482d3b9ECEddA6B3f6088A),	latest (04.25)			
 
-**UserHistory:** [0xb8410C172bEFAC21FeE558d36e095dA50a125537](https://testnet.blastscan.io/token/0xb8410C172bEFAC21FeE558d36e095dA50a125537),	  latest (04.11)
+**UserHistory:** [0xDa47D6f0e6f48860977929246BDF57447E68bd58](https://testnet.blastscan.io/token/0xDa47D6f0e6f48860977929246BDF57447E68bd58),	  latest (04.24)
 
-**RefThrone:** [0x6e1b222516472e693E3D3Bb0fc2745fA9A4914D2](https://testnet.blastscan.io/address/0xf91d93A22CEe0B8b8c76a0412523C3566eAe0938),	latest (04.18)		
+**RefThrone:** [0x3e039A13c1338862f160836cd246fB87Ea157f74](https://testnet.blastscan.io/address/0x3e039A13c1338862f160836cd246fB87Ea157f74),	latest (04.24)		
 
-**RefThroneTypes:** [0x359aAd7322d1374B4B739E5bB17C846c7dC15f10](https://testnet.blastscan.io/address/0x2715BADd0622E3d6f84eFFaEB742f5ae712199c4),	latest (04.11)
+**RefThroneTypes:** [0x8e013061903E4a06562f715620806822449E55bb](https://testnet.blastscan.io/address/0x8e013061903E4a06562f715620806822449E55bb),	latest (04.24)
 
-**OwnerGroupContract:** [0x0902daB19021EcBC8a02E393D6dddE644182cbE3](https://testnet.blastscan.io/address/0x0902daB19021EcBC8a02E393D6dddE644182cbE3),	latest (04.11)
+**OwnerGroupContract:** [0xe347cf15b3b05Af50dFd944925e0b5d68F731706](https://testnet.blastscan.io/address/0xe347cf15b3b05Af50dFd944925e0b5d68F731706),	latest (04.24)
 
 **Contract Deployer address:** 0xcEBc0Cea4d6644e395aFa338D7b17514904074e1
 
