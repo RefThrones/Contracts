@@ -14,6 +14,7 @@
 
 **OwnerGroupContract:** [0x0902daB19021EcBC8a02E393D6dddE644182cbE3](https://testnet.blastscan.io/address/0x0902daB19021EcBC8a02E393D6dddE644182cbE3),	latest (04.11)
 
+**Contract Deployer address:** 0xcEBc0Cea4d6644e395aFa338D7b17514904074e1
 
 # Dev Env configuration
 
