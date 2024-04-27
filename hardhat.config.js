@@ -18,8 +18,8 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      blast_mainnet: "1KFN1WUABD86U581ATRN9QFQSQSYT7AIRG", 
-      blast_sepolia: "1KFN1WUABD86U581ATRN9QFQSQSYT7AIRG", 
+      blast_mainnet: process.env.BLASTSCAN_API_KEY, 
+      blast_sepolia: process.env.BLASTSCAN_API_KEY, 
     },
     customChains: [
       {
