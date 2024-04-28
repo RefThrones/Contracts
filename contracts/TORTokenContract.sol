@@ -12,6 +12,8 @@ contract TORTokenContract {
     mapping(uint => MintOrBurnTransaction) private mintOrBurnTransaction;
     mapping(uint => mapping(address =>bool)) isConfirmed;
     address private _ownerGroupContractAddress;
+    bool genesisMintFlag = false;
+
 
     uint private transactionCount = 0;
     struct MintOrBurnTransaction {
@@ -35,6 +37,7 @@ contract TORTokenContract {
     event ConfirmTransaction(address indexed owner, uint transactionIndex);
     event ExecuteTransaction(address indexed owner, uint transactionIndex);
     event RevokeConfirmation(address indexed owner, uint transactionIndex);
+    event GenesisMint(address indexed sender, address indexed to, uint amount);
 
 
     constructor(address ownerGroupContractAddress) {
@@ -81,6 +84,16 @@ contract TORTokenContract {
             }
         }
         return pendingTransactions;
+    }
+
+    function executeGenesisMint(address toAddress, uint256 amount) public onlyOwner() 
+    {
+        require(genesisMintFlag != true, "Already Mint");
+
+        _mint(toAddress, amount);        
+        genesisMintFlag = true;
+        emit GenesisMint(msg.sender, toAddress, amount);
+
     }
 
     function getMintOrBurnTransaction(uint index) public view onlyOwner returns (address, uint, bool, bool, uint) {
