@@ -59,6 +59,9 @@
 > npx hardhat verify --network blast_mainnet [deployed contract address] --constructor-args ./verification-arguments/CONTRACT_FILE_NAME-args.js
 
 
+# TEST (Using HardHat)
+> npx hardhat test --network blast_sepolia
+
 
 # .env
 OWNER_GROUP_ADDRESSES="0x6a7646E5c6A26F662415Aa763BE1D38987CcBaf7,0x156aD54B68362F2D54520de9951499d5cd251033,0x0Aa5447B53A74c5a8EFc23e7f638108BC86D1028,0xC5296c803e1FfFdd91561f17650757578e0D7bAb,0x58179fe0488e8224039DDd093F652B4605Ed11d4"

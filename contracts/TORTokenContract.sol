@@ -187,8 +187,16 @@ contract TORTokenContract {
     }
 
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {
-        _transfer(sender, recipient, amount);
-        _approve(sender, msg.sender, _allowances[sender][msg.sender] - amount);
+        require(sender != address(0), "Invalid address");
+        require(recipient != address(0), "Invalid address");
+        require(_balances[sender] >= amount, "Insufficient balance");
+        require(_allowances[sender][msg.sender] >= amount, "Allowance exceeded");
+
+        _balances[sender] -= amount;
+        _balances[recipient] += amount;
+        _allowances[sender][msg.sender] -= amount;
+
+        emit Transfer(sender, recipient, amount);        
         return true;
     }
 

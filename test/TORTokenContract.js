@@ -4,126 +4,118 @@ const {
 } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
+const torTokenContract = require("../artifacts/contracts/TORTokenContract.sol/TORTokenContract.json");
+const TOR_TOKEN_CONTRAT_ADDRESS = "0xA1495ff7c6857Bc57D0d12b9F35f45a953451a31";
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 describe("TORTokenContract", function () {
-  // We define a fixture to reuse the same setup in every test.
-  // We use loadFixture to run this setup once, snapshot that state,
-  // and reset Hardhat Network to that snapshot in every test.
- /*
-  async function deployTORTokenContract() {
-    // Contracts are deployed using the first signer/account by default
-    const [owner, otherAccount] = await ethers.getSigners();
+  console.log("This is TORTokenContract Test");
+  //Deploy And Genesis Mint Test
+  it("Deployment should assign the total supply of tokens to the owner", async function () {
 
-    const eTORTokenContract = await ethers.getContractFactory("eTORTokenContract");
-    const TORTokenContract = await eTORTokenContract.deploy("RefThrones", "TOR");
+    return;
+    const [owner] = await ethers.getSigners();    
+    const torToken = await ethers.deployContract("TORTokenContract",["0x0902daB19021EcBC8a02E393D6dddE644182cbE3"]);
+    console.log(torToken);
 
-    return { TORTokenContract, owner, otherAccount };
-  }
+    const result = await torToken.executeGenesisMint(owner.address, 1000000000000000000000000000n);
 
-  describe("Deployment", function () {
-    it("Should set the right unlockTime", async function () {
-      const { TORTokenContract, unlockTime } = await loadFixture(deployTORTokenContract);
+    console.log("Wait for transaction! 5 secs..");
+    await sleep(5 * 1000);
+    
+    const ownerBalance = await torToken.balanceOf(owner.address);    
+    console.log(`Address: ${owner.address} Balance: ${ownerBalance}`);
 
-      expect(await lock.unlockTime()).to.equal(unlockTime);
-    });
+    //TOKEN TotalSupply
+    const totalSupplyCnt = await torToken.totalSupply();
 
-    it("Should set the right owner", async function () {
-      const { lock, owner } = await loadFixture(deployTORTokenContract);
+    console.log(totalSupplyCnt);
+    // expect(await torTokenContract.totalSupply()).to.equal(ownerBalance);
 
-      expect(await lock.owner()).to.equal(owner.address);
-    });
-
-    it("Should receive and store the funds to lock", async function () {
-      const { lock, lockedAmount } = await loadFixture(
-        deployOneYearLockFixture
-      );
-
-      expect(await ethers.provider.getBalance(lock.target)).to.equal(
-        lockedAmount
-      );
-    it("Should receive and store the funds to lock", async function () {
-      const { lock, lockedAmount } = await loadFixture(
-        deployOneYearLockFixture
-      );
-
-      expect(await ethers.provider.getBalance(lock.target)).to.equal(
-        lockedAmount
-      );
-    });
-
-    it("Should fail if the unlockTime is not in the future", async function () {
-      // We don't use the fixture here because we want a different deployment
-      const latestTime = await time.latest();
-      const Lock = await ethers.getContractFactory("Lock");
-      await expect(Lock.deploy(latestTime, { value: 1 })).to.be.revertedWith(
-        "Unlock time should be in the future"
-      );
-    });
   });
 
-  describe("Withdrawals", function () {
-    describe("Validations", function () {
-      it("Should revert with the right error if called too soon", async function () {
-        const { lock } = await loadFixture(deployOneYearLockFixture);
+  //Approve Test
+  it("Contract Load And Approve Test", async function(){
+      return;
+      const [owner] = await ethers.getSigners();
+      const torToken = new ethers.Contract(TOR_TOKEN_CONTRAT_ADDRESS, torTokenContract.abi, owner);
 
-        await expect(lock.withdraw()).to.be.revertedWith(
-          "You can't withdraw yet"
-        );
-      });
+      const spender = "0xf03Dce23D869ce9FB7363cb2C06F9F7750377710";
 
-      it("Should revert with the right error if called from another account", async function () {
-        const { lock, unlockTime, otherAccount } = await loadFixture(
-          deployOneYearLockFixture
-        );
+      //TOKEN Transfer Test
+      const transferResult = await torToken.approve(spender, 100000000000000000000n);
+      console.log(transferResult);
 
-        // We can increase the time in Hardhat Network
-        await time.increaseTo(unlockTime);
+      await sleep(2 * 1000);
 
-        // We use lock.connect() to send a transaction from another account
-        await expect(lock.connect(otherAccount).withdraw()).to.be.revertedWith(
-          "You aren't the owner"
-        );
-      });
+      const allowanceAmount = await torToken.allowance(owner.address, spender);
+      console.log(`From: ${owner.address} To: ${spender} allowanceAmount: ${allowanceAmount}`);
 
-      it("Shouldn't fail if the unlockTime has arrived and the owner calls it", async function () {
-        const { lock, unlockTime } = await loadFixture(
-          deployOneYearLockFixture
-        );
 
-        // Transactions are sent using the first signer by default
-        await time.increaseTo(unlockTime);
+  });
 
-        await expect(lock.withdraw()).not.to.be.reverted;
-      });
-    });
+  //Transfer Test
+  it("Load Contract And TransferFrom", async function(){
+    return;
+    const [owner] = await ethers.getSigners();
+    const torToken = new ethers.Contract(TOR_TOKEN_CONTRAT_ADDRESS, torTokenContract.abi, owner);
 
-    describe("Events", function () {
-      it("Should emit an event on withdrawals", async function () {
-        const { lock, unlockTime, lockedAmount } = await loadFixture(
-          deployOneYearLockFixture
-        );
+    const receiver = "0xf03Dce23D869ce9FB7363cb2C06F9F7750377710";
 
-        await time.increaseTo(unlockTime);
+    const result = await torToken.transfer(receiver, 7000000000000000000n);
+    console.log(result);
 
-        await expect(lock.withdraw())
-          .to.emit(lock, "Withdrawal")
-          .withArgs(lockedAmount, anyValue); // We accept any value as `when` arg
-      });
-    });
+    await sleep(5 * 1000);
 
-    describe("Transfers", function () {
-      it("Should transfer the funds to the owner", async function () {
-        const { lock, unlockTime, lockedAmount, owner } = await loadFixture(
-          deployOneYearLockFixture
-        );
+    const balance = await torToken.balanceOf(receiver);    
+    console.log(`Address: ${receiver} Balance: ${balance}`);
 
-        await time.increaseTo(unlockTime);
+  });
 
-        await expect(lock.withdraw()).to.changeEtherBalances(
-          [owner, lock],
-          [lockedAmount, -lockedAmount]
-        );
-      });
-    });
-  }); */
+  //TransferFrom Test
+  it("Load Contract And TransferFrom", async function(){
+    return;
+    const [owner] = await ethers.getSigners();
+    const torToken = new ethers.Contract(TOR_TOKEN_CONTRAT_ADDRESS, torTokenContract.abi, owner);
+
+    
+    const sender ="0xC5296c803e1FfFdd91561f17650757578e0D7bAb";
+    const receiver = "0x563f829741ad8229B6cd13A24C3cBF95b5e4829c";
+
+    const result = await torToken.transferFrom(sender, receiver, 900000000000000000n);
+    console.log(result);
+
+    await sleep(5 * 1000);
+
+    const balance = await torToken.balanceOf(receiver);    
+    console.log(`Address: ${receiver} Balance: ${balance}`);
+
+  });
+
+  //Mint And Burn Test -- Multi Sig
+  it("Mint And Burn Test", async function(){
+    
+    const [owner] = await ethers.getSigners();
+    const torToken = new ethers.Contract(TOR_TOKEN_CONTRAT_ADDRESS, torTokenContract.abi, owner);
+
+    
+    const sender ="0xC5296c803e1FfFdd91561f17650757578e0D7bAb";
+    const receiver = "0x563f829741ad8229B6cd13A24C3cBF95b5e4829c";
+
+    const result = await torToken.transferFrom(sender, receiver, 900000000000000000n);
+    console.log(result);
+
+    await sleep(5 * 1000);
+
+    const balance = await torToken.balanceOf(receiver);    
+    console.log(`Address: ${receiver} Balance: ${balance}`);
+
+  });
+
+  // Multi Sig Test, submit, confirmation
+
+
 });
